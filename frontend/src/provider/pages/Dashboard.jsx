@@ -1,0 +1,1 @@
+import React from 'react'; import AvailabilityToggle from './AvailabilityToggle'; import IncomingOrders from './IncomingOrders'; export default function Dashboard() { return <div><h2>Provider Dashboard</h2><AvailabilityToggle /><IncomingOrders /></div>; }

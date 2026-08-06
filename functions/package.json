@@ -1,0 +1,1 @@
+{ "name": "dropin-functions", "dependencies": { "firebase-admin": "^11.8.0", "firebase-functions": "^4.3.1" } }
