@@ -11,5 +11,10 @@
     "build": "npm run build --workspace=frontend",
     "start": "npm run dev --workspace=frontend",
     "lint": "npm run build --workspace=frontend"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "lucide-react": "^1.29.0",
+    "tailwindcss": "^4.3.3"
   }
 }
