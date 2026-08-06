@@ -11,6 +11,7 @@ export default defineConfig({
   },
   define: {
     'process.env': {
+      GOOGLE_MAPS_PLATFORM_KEY: JSON.stringify(process.env.GOOGLE_MAPS_PLATFORM_KEY || ''),
       REACT_APP_FIREBASE_API_KEY: JSON.stringify(process.env.REACT_APP_FIREBASE_API_KEY || ''),
       REACT_APP_FIREBASE_AUTH_DOMAIN: JSON.stringify(process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || ''),
       REACT_APP_FIREBASE_PROJECT_ID: JSON.stringify(process.env.REACT_APP_FIREBASE_PROJECT_ID || ''),

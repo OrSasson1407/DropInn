@@ -13,7 +13,11 @@ export default function IncomingOrders() {
   useEffect(() => {
     if (!currentUser) return;
     const q = query(collection(db, 'orders'), where('providerId', '==', currentUser.uid));
-    return onSnapshot(q, (snap) => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return onSnapshot(
+      q,
+      (snap) => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      (error) => console.warn('Incoming orders snapshot warning:', error)
+    );
   }, [currentUser]);
 
   const updateStatus = async (id, status) => {

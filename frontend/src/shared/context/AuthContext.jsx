@@ -10,5 +10,5 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     return onAuthStateChanged(auth, user => { setCurrentUser(user); setLoading(false); });
   }, []);
-  return <AuthContext.Provider value={{ currentUser }}>{!loading && children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ currentUser, loading }}>{children}</AuthContext.Provider>;
 }

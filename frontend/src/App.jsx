@@ -20,9 +20,11 @@ import SmartRouteOptimizer from './provider/pages/SmartRouteOptimizer';
 import ClientCRMNotes from './provider/pages/ClientCRMNotes';
 import CalendarSyncSettings from './provider/pages/CalendarSyncSettings';
 import InstantPayoutsDashboard from './provider/pages/InstantPayoutsDashboard';
+import FleetManagementPortal from './provider/pages/FleetManagementPortal';
 
 import AdminApprovals from './admin/pages/ProviderApprovals';
 import ArchitectureSpecPage from './admin/pages/ArchitectureSpecPage';
+import SystemHealthStatusPage from './admin/pages/SystemHealthStatusPage';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 import Navbar from './shared/components/Navbar';
 
@@ -52,18 +54,28 @@ export default function App() {
             <Route path='/provider/client-crm' element={<ClientCRMNotes />} />
             <Route path='/provider/calendar-sync' element={<CalendarSyncSettings />} />
             <Route path='/provider/payouts' element={<InstantPayoutsDashboard />} />
+            <Route path='/provider/fleet' element={<FleetManagementPortal />} />
             <Route path='/provider/*' element={<ProtectedRoute><ProviderDashboard /></ProtectedRoute>} />
 
             <Route path='/admin/*' element={<ProtectedRoute><AdminApprovals /></ProtectedRoute>} />
+            <Route path='/status' element={<SystemHealthStatusPage />} />
             <Route path='/docs/architecture' element={<ArchitectureSpecPage />} />
           </Routes>
         </main>
         <footer className="border-t border-slate-900 bg-slate-950/80 py-8 text-center text-xs text-slate-500">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-300">DropIn v2.0</span> — At-Home Grooming & Beauty Marketplace ("Wolt for Barbers")
+              <span className="font-bold text-slate-300">DropIn v3.0 Enterprise</span> — At-Home Grooming & Beauty Marketplace ("Wolt for Barbers")
             </div>
-            <p>© {new Date().getFullYear()} DropIn Services Inc. Ultra-fast barber & beauty delivery.</p>
+            <div className="flex items-center gap-4 text-slate-400 font-medium">
+              <a href="/status" className="hover:text-amber-400 font-mono text-[11px] flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                System Health (#50)
+              </a>
+              <a href="/docs/architecture" className="hover:text-amber-400 text-[11px]">
+                V3.0 PRD Architecture Spec
+              </a>
+            </div>
           </div>
         </footer>
       </div>

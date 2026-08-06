@@ -112,11 +112,18 @@ export default function Home() {
 
   useEffect(() => {
     const q = query(collection(db, 'providers'), where('isAvailable', '==', true));
-    return onSnapshot(q, (snap) => {
-      const liveList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setProviders(liveList);
-      setLoading(false);
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        const liveList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (liveList.length > 0) setProviders(liveList);
+        setLoading(false);
+      },
+      (error) => {
+        console.warn('Firestore snapshot listener warning:', error);
+        setLoading(false);
+      }
+    );
   }, []);
 
   const activeProvidersList = providers.length > 0 ? providers : DEMO_PROVIDERS;

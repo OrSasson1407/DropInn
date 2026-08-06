@@ -31,30 +31,37 @@ export default function CustomerOrders() {
     }
 
     const q = query(collection(db, 'orders'), where('customerId', '==', currentUser.uid));
-    const unsubscribe = onSnapshot(q, async (snap) => {
-      const orderList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Sort newest first
-      orderList.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-      setOrders(orderList);
+    const unsubscribe = onSnapshot(
+      q,
+      async (snap) => {
+        const orderList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Sort newest first
+        orderList.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        setOrders(orderList);
 
-      // Fetch provider metadata for each unique providerId
-      const pIds = [...new Set(orderList.map(o => o.providerId))];
-      const pMap = {};
-      for (const pId of pIds) {
-        if (pId) {
-          try {
-            const pSnap = await getDoc(doc(db, 'providers', pId));
-            if (pSnap.exists()) {
-              pMap[pId] = pSnap.data();
+        // Fetch provider metadata for each unique providerId
+        const pIds = [...new Set(orderList.map(o => o.providerId))];
+        const pMap = {};
+        for (const pId of pIds) {
+          if (pId) {
+            try {
+              const pSnap = await getDoc(doc(db, 'providers', pId));
+              if (pSnap.exists()) {
+                pMap[pId] = pSnap.data();
+              }
+            } catch (err) {
+              console.error(err);
             }
-          } catch (err) {
-            console.error(err);
           }
         }
+        setProvidersMap(pMap);
+        setLoading(false);
+      },
+      (error) => {
+        console.warn('Customer orders snapshot warning:', error);
+        setLoading(false);
       }
-      setProvidersMap(pMap);
-      setLoading(false);
-    });
+    );
 
     return () => unsubscribe();
   }, [currentUser]);

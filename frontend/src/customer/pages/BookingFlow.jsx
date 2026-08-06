@@ -8,6 +8,7 @@ import { calculateDistance } from '../../shared/services/maps';
 import { db } from '../../firebase';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import SafetyAssistSOS from '../../shared/components/SafetyAssistSOS';
+import ServiceCoverageMap from '../../shared/components/ServiceCoverageMap';
 import { 
   MapPin, CreditCard, ShieldCheck, Clock, Star, CheckCircle, ArrowRight, 
   Loader2, Sparkles, Navigation, Scissors, Calendar, MessageSquare, 
@@ -98,23 +99,29 @@ export default function BookingFlow() {
 
   useEffect(() => {
     if (!orderId) return;
-    return onSnapshot(doc(db, 'orders', orderId), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.status !== status && data.status === 'approved') {
-          toast.info(`Provider has accepted your booking! En route to ${address.substring(0, 20)}...`, 'Pro En Route');
-        } else if (data.status !== status && data.status === 'completed') {
-          toast.success('Service completed! Thank you for booking with DropIn.', 'Service Delivered');
+    return onSnapshot(
+      doc(db, 'orders', orderId),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.status !== status && data.status === 'approved') {
+            toast.info(`Provider has accepted your booking! En route to ${address.substring(0, 20)}...`, 'Pro En Route');
+          } else if (data.status !== status && data.status === 'completed') {
+            toast.success('Service completed! Thank you for booking with DropIn.', 'Service Delivered');
+          }
+          setStatus(data.status);
+          if (data.status === 'approved' && messages.length === 1) {
+            setMessages(prev => [
+              ...prev,
+              { sender: 'provider', text: 'Hi! I accepted your request. I am packing my mobile kit and will arrive in approx 15 minutes!', time: 'Just now' }
+            ]);
+          }
         }
-        setStatus(data.status);
-        if (data.status === 'approved' && messages.length === 1) {
-          setMessages(prev => [
-            ...prev,
-            { sender: 'provider', text: 'Hi! I accepted your request. I am packing my mobile kit and will arrive in approx 15 minutes!', time: 'Just now' }
-          ]);
-        }
+      },
+      (error) => {
+        console.warn('Booking status snapshot warning:', error);
       }
-    });
+    );
   }, [orderId, status, address, toast]);
 
   // Recalculate maps distance on address change
@@ -263,28 +270,19 @@ export default function BookingFlow() {
           </div>
 
           {/* Map & ETA Box */}
-          <div className="bg-slate-950 rounded-2xl border border-slate-800 p-6 space-y-4 text-center relative overflow-hidden">
+          <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 space-y-4 relative overflow-hidden">
             <div className="flex items-center justify-between text-slate-400 text-xs flex-wrap gap-2">
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-amber-400" />
-                <span>Address: <strong className="text-white">{address}</strong></span>
+                <span>Destination: <strong className="text-white">{address}</strong></span>
               </span>
               <span className="bg-amber-500/10 text-amber-400 font-bold px-3 py-1 rounded-full border border-amber-500/20">
                 ETA: {distInfo.time} ({distInfo.distance})
               </span>
             </div>
             
-            <div className="h-36 bg-slate-900 rounded-xl border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
-              <div className="relative z-10 flex flex-col items-center gap-2">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 font-extrabold flex items-center justify-center shadow-lg shadow-amber-500/20 animate-bounce">
-                  <Sparkles className="w-6 h-6 stroke-[2.5]" />
-                </div>
-                <span className="text-xs font-bold text-slate-200">
-                  {isCompleted ? 'Service Delivered Successfully!' : isApproved ? 'Provider is driving to your doorstep...' : 'Waiting for provider confirmation...'}
-                </span>
-              </div>
-            </div>
+            {/* Live Interactive Dispatch Map */}
+            <ServiceCoverageMap selectedAddress={address} isCompact={true} />
           </div>
 
           {/* In-App Direct Chat Widget */}
@@ -462,11 +460,29 @@ export default function BookingFlow() {
             </div>
           </div>
 
-          {/* Delivery Address */}
-          <div className="space-y-2">
+          {/* Delivery Address & Interactive Coverage Map */}
+          <div className="space-y-3">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-              3. Service Delivery Location
+              3. Service Delivery Location & Interactive Map Pin
             </label>
+
+            {/* Interactive Map Selector */}
+            <ServiceCoverageMap
+              selectedAddress={address}
+              onSelectLocation={(newAddr, details) => {
+                setAddress(newAddr);
+                if (details?.calculatedKm && details?.calculatedEta) {
+                  setDistInfo({
+                    distance: `${details.calculatedKm} km`,
+                    time: `${details.calculatedEta} mins`,
+                    numericMinutes: details.calculatedEta,
+                    numericKm: details.calculatedKm,
+                    formattedEta: `${details.calculatedEta} min (${details.calculatedKm} km away)`
+                  });
+                }
+              }}
+            />
+
             <div className="relative">
               <MapPin className="absolute left-4 top-3.5 w-5 h-5 text-amber-400" />
               <input

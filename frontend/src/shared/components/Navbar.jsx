@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
+import DropInLogo from './DropInLogo';
 import { 
   Scissors, User, ShieldCheck, LogOut, Menu, X, Compass, 
   Briefcase, ChevronRight, Clock, MapPin, Sparkles, ShoppingBag,
@@ -31,21 +32,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-rose-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-amber-200 bg-clip-text text-transparent flex items-center gap-1.5">
-                <span>DropIn</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  v2.0 MULTI-CARE
-                </span>
-              </span>
-              <span className="text-[10px] text-amber-400 font-bold tracking-wider uppercase -mt-0.5">
-                At-Home Grooming & Beauty Marketplace
-              </span>
-            </div>
+          <Link to="/" className="flex items-center group">
+            <DropInLogo size="md" />
           </Link>
 
           {/* Desktop Navigation */}
