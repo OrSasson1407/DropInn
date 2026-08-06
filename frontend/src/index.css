@@ -1,9 +1,127 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --font-heading: 'Outfit', 'Playfair Display', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+  }
+
   body {
-    background-color: #f8fafc;
-    color: #0f172a;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #faf8f5;
+    color: #1c1917;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3, .font-serif-heading {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
   }
 }
+
+/* Warm Luxury Theme Overrides (Replaces mechanical dark slate with warm organic stone & cream) */
+.bg-slate-950 {
+  background-color: #faf8f5 !important;
+}
+
+.bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+.bg-slate-900\/95, .bg-slate-900\/90, .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.bg-slate-800, .bg-slate-800\/80, .bg-slate-800\/50 {
+  background-color: #f5f3ef !important;
+}
+
+.border-slate-800, .border-slate-800\/80, .border-slate-700 {
+  border-color: #e7e5e4 !important;
+}
+
+.text-white {
+  color: #1c1917 !important;
+}
+
+.text-slate-100, .text-slate-200 {
+  color: #292524 !important;
+}
+
+.text-slate-300 {
+  color: #44403c !important;
+}
+
+.text-slate-400 {
+  color: #78716c !important;
+}
+
+.text-slate-500 {
+  color: #a8a29e !important;
+}
+
+.text-amber-400 {
+  color: #b45309 !important;
+}
+
+.bg-amber-500 {
+  background-color: #d97706 !important;
+  color: #ffffff !important;
+}
+
+.bg-amber-500\/10 {
+  background-color: rgba(217, 119, 6, 0.08) !important;
+}
+
+.bg-amber-500\/20 {
+  background-color: rgba(217, 119, 6, 0.15) !important;
+}
+
+.border-amber-500, .border-amber-500\/40, .border-amber-500\/30 {
+  border-color: rgba(217, 119, 6, 0.3) !important;
+}
+
+.shadow-xl, .shadow-2xl {
+  box-shadow: 0 12px 32px -8px rgba(28, 25, 23, 0.05), 0 4px 12px -2px rgba(28, 25, 23, 0.03) !important;
+}
+
+input, select, textarea {
+  background-color: #ffffff !important;
+  border-color: #e7e5e4 !important;
+  color: #1c1917 !important;
+  border-radius: 0.85rem !important;
+  font-family: var(--font-body) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #d97706 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12) !important;
+}
+
+button {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toastProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

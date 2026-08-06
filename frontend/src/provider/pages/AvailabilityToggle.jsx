@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { setProviderAvailability } from '../../shared/services/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
+import { useToast } from '../../shared/context/ToastContext';
 import { Radio, Power, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function AvailabilityToggle() {
   const [isAvailable, setIsAvailable] = useState(false);
   const { currentUser } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const toggle = async () => {
@@ -15,8 +17,14 @@ export default function AvailabilityToggle() {
     if (currentUser) {
       try {
         await setProviderAvailability(currentUser.uid, newVal);
+        if (newVal) {
+          toast.success('You are now ONLINE and visible to nearby clients for instant booking!', 'Dispatch Mode Active');
+        } else {
+          toast.info('You are now OFFLINE. You will not receive new incoming booking requests.', 'Dispatch Mode Inactive');
+        }
       } catch (e) {
         console.error(e);
+        toast.error('Failed to update availability status', 'Network Error');
       } finally {
         setLoading(false);
       }

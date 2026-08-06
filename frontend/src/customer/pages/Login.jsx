@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { login } from '../../shared/services/auth';
 import { useNavigate, Link } from 'react-router-dom';
+import { useToast } from '../../shared/context/ToastContext';
 import { Mail, Lock, LogIn, Scissors, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function CustomerLogin() {
@@ -9,6 +10,7 @@ export default function CustomerLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+  const { toast } = useToast();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -16,9 +18,11 @@ export default function CustomerLogin() {
     setLoading(true);
     try {
       await login(email, password);
+      toast.success('Welcome back! You are now signed in.', 'Signed In');
       nav('/');
     } catch (err) {
       setError(err.message || 'Failed to login');
+      toast.error(err.message || 'Failed to login', 'Sign In Error');
     } finally {
       setLoading(false);
     }

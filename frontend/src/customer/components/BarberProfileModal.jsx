@@ -3,46 +3,45 @@ import { Link } from 'react-router-dom';
 import { 
   X, Star, MapPin, Clock, Scissors, ShieldCheck, Award, 
   ThumbsUp, CheckCircle2, MessageSquare, Image as ImageIcon,
-  Sparkles, Zap, ChevronRight, UserCheck
+  Sparkles, Zap, ChevronRight, UserCheck, HeartHandshake, Sparkle
 } from 'lucide-react';
 
-// High quality haircut portfolio sample photos for realistic past work rendering
 const DEFAULT_PORTFOLIO = [
   {
     id: '1',
     title: 'Mid Skin Fade & Textured Crop',
-    category: 'Skin Fade',
+    category: 'Men\'s Haircut',
     url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: '2',
-    title: 'Precision Beard Sculpting & Razor Line',
-    category: 'Beard Trim',
-    url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80'
+    title: 'Gel Manicure & Nail Art Design',
+    category: 'Nails & Beauty',
+    url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: '3',
-    title: 'Low Drop Fade with Hot Towel Finish',
-    category: 'Drop Fade',
-    url: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80'
+    title: 'Balayage & Women\'s Blowout Styling',
+    category: 'Women\'s Styling',
+    url: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: '4',
-    title: 'Classic Taper & Pompadour Styling',
-    category: 'Classic Cut',
-    url: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=800&q=80'
+    title: 'Evening Event Professional Makeup',
+    category: 'Makeup',
+    url: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: '5',
-    title: 'Burst Fade & Sharp Edge Up',
-    category: 'Edge Up',
-    url: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=800&q=80'
+    title: 'Deep Tissue Relaxing Massage',
+    category: 'Massage & Spa',
+    url: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: '6',
-    title: 'Slick Back Taper & Foil Shave',
-    category: 'Foil Shave',
-    url: 'https://images.unsplash.com/photo-1517832606589-715069686677?auto=format&fit=crop&w=800&q=80'
+    title: 'Precision Beard Sculpting & Razor Line',
+    category: 'Beard Trim',
+    url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80'
   }
 ];
 
@@ -52,21 +51,21 @@ const DEFAULT_REVIEWS = [
     author: 'Daniel M.',
     rating: 5,
     date: '2 days ago',
-    comment: 'Best skin fade I have ever gotten! Arrived at my apartment in 18 minutes, brought professional lighting and mat. Extremely clean & polite.'
+    comment: 'Incredible service! Arrived at my home in 18 minutes with full professional equipment. Extremely clean & polite.'
   },
   {
     id: 'r2',
-    author: 'Eitan K.',
+    author: 'Elena R.',
     rating: 5,
     date: '1 week ago',
-    comment: 'Saved me before an urgent meeting. Razor line on the beard was 10/10 sharp. Will definitely rebook.'
+    comment: 'Had a gel manicure and facial before a major wedding. Absolutely flawless result without leaving my house!'
   },
   {
     id: 'r3',
     author: 'Jonathan S.',
     rating: 5,
     date: '2 weeks ago',
-    comment: 'Punctual, super friendly barber. Great attention to detail and zero mess left behind.'
+    comment: 'Punctual, super friendly provider. Great attention to detail and zero mess left behind.'
   }
 ];
 
@@ -76,11 +75,12 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
 
   if (!isOpen || !provider) return null;
 
-  const name = provider.name || `Barber #${provider.id.substring(0, 6)}`;
-  const price = provider.price || 100;
+  const name = provider.name || `Pro #${provider.id.substring(0, 6)}`;
+  const price = provider.price || 120;
   const rating = provider.rating || 4.9;
-  const bio = provider.bio || `${name} is a master barber with 8+ years of craft experience specializing in precision skin fades, hot towel razor shaves, and tailored beard sculpting. Servicing clients across the metropolitan area with mobile studio equipment.`;
-  const specialties = provider.specialties || ['Skin Fades', 'Beard Sculpting', 'Hot Towel Razor', 'Kid Cuts', 'Hair Tattoo Lines'];
+  const category = provider.category || 'Grooming & Beauty Pro';
+  const bio = provider.bio || `${name} is a certified grooming & beauty specialist with 8+ years of craft experience providing at-home haircutting, styling, manicures, skincare, and massages with portable mobile gear.`;
+  const specialties = provider.specialties || ['Skin Fades', 'Gel Manicure', 'Beard Sculpting', 'Women\'s Blowout', 'Deep Tissue'];
   const portfolio = provider.portfolio || DEFAULT_PORTFOLIO;
   const reviews = provider.reviews || DEFAULT_REVIEWS;
 
@@ -113,13 +113,13 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl sm:text-2xl font-black text-white">{name}</h2>
-                  <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30" title="Verified Barber">
+                  <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30" title="Verified Provider">
                     <ShieldCheck className="w-4 h-4" />
                   </span>
                 </div>
-                <p className="text-xs text-amber-100/80 flex items-center gap-1.5">
+                <p className="text-xs text-amber-100/90 flex items-center gap-1.5 font-medium">
                   <Award className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Verified Master Barber • Mobile Delivery Specialist</span>
+                  <span>Verified {category} • Mobile Delivery Pro</span>
                 </p>
                 <div className="flex items-center gap-2 pt-1 text-xs">
                   <span className="flex items-center gap-1 bg-slate-950/60 px-2.5 py-0.5 rounded-full text-amber-300 font-bold border border-amber-300/20">
@@ -127,24 +127,24 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                     <span>{rating}</span>
                   </span>
                   <span className="text-slate-200 text-[11px] font-medium">
-                    (48 verified bookings)
+                    (52 verified bookings)
                   </span>
                 </div>
               </div>
             </div>
 
             <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-amber-500/30 text-right shrink-0">
-              <span className="text-xs text-slate-400 block font-medium">Standard Cut</span>
+              <span className="text-xs text-slate-400 block font-medium">Standard Rate</span>
               <span className="text-2xl font-black text-amber-400">{price} ILS</span>
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center border-b border-slate-800 bg-slate-950 px-6 pt-3 gap-2 shrink-0">
+        <div className="flex items-center border-b border-slate-800 bg-slate-950 px-6 pt-3 gap-2 shrink-0 overflow-x-auto">
           <button
             onClick={() => setActiveTab('portfolio')}
-            className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
+            className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'portfolio'
                 ? 'border-amber-500 text-amber-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -156,19 +156,19 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
 
           <button
             onClick={() => setActiveTab('bio')}
-            className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
+            className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'bio'
                 ? 'border-amber-500 text-amber-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <UserCheck className="w-4 h-4" />
-            <span>Barber Bio & Skills</span>
+            <span>Bio & Service Menu</span>
           </button>
 
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
+            className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'reviews'
                 ? 'border-amber-500 text-amber-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -189,9 +189,9 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Real Haircut Showcase</span>
+                    <span>Real Client Results & Showcase</span>
                   </h3>
-                  <p className="text-xs text-slate-400">Click any photograph to zoom in and check fade precision</p>
+                  <p className="text-xs text-slate-400">Click any photo to zoom in and check work quality</p>
                 </div>
               </div>
 
@@ -223,11 +223,11 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
             </div>
           )}
 
-          {/* TAB 2: Barber Bio & Skills */}
+          {/* TAB 2: Bio & Service Menu */}
           {activeTab === 'bio' && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider text-slate-400">About the Barber</h3>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider text-slate-400">About the Provider</h3>
                 <p className="text-sm leading-relaxed text-slate-300 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                   {bio}
                 </p>
@@ -242,7 +242,7 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                       key={s}
                       className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-amber-400 flex items-center gap-2"
                     >
-                      <Scissors className="w-3.5 h-3.5 text-amber-400" />
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                       <span>{s}</span>
                     </div>
                   ))}
@@ -256,14 +256,14 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Sanitized Equipment</span>
                   </span>
-                  <p className="text-slate-400">All clippers, razors & combs sanitized between each customer visit.</p>
+                  <p className="text-slate-400">All tools, brushes, clippers, and equipment are hospital-grade sanitized between client visits.</p>
                 </div>
                 <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1">
                   <span className="font-bold text-amber-400 flex items-center gap-1.5">
                     <Zap className="w-4 h-4" />
-                    <span>Clean Mobile Setup</span>
+                    <span>Mobile Studio Gear</span>
                   </span>
-                  <p className="text-slate-400">Barber brings floor mats, vacuum ring & ring light. Zero hair left behind.</p>
+                  <p className="text-slate-400">Brings ring lights, protective mats & towels. Leaves zero mess behind.</p>
                 </div>
               </div>
             </div>
@@ -315,7 +315,7 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
         {/* Modal Footer Call To Action */}
         <div className="p-4 sm:p-6 bg-slate-950 border-t border-slate-800 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-slate-400 text-center sm:text-left">
-            <span>Ready to get a fresh cut from </span>
+            <span>Ready to book </span>
             <strong className="text-white">{name}</strong>?
           </div>
 
@@ -332,7 +332,7 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                 onClick={onClose}
                 className="w-full sm:w-auto py-3 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
               >
-                <span>Book This Barber ({price} ILS)</span>
+                <span>Book Service ({price} ILS)</span>
                 <ChevronRight className="w-4 h-4 stroke-[3]" />
               </button>
             </Link>

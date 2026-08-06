@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
+import { useToast } from '../../shared/context/ToastContext';
 import { Bell, MapPin, Check, X, Scissors, Clock, DollarSign, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export default function IncomingOrders() {
   const [orders, setOrders] = useState([]);
   const { currentUser } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!currentUser) return;
@@ -17,9 +19,16 @@ export default function IncomingOrders() {
   const updateStatus = async (id, status) => {
     try {
       await updateDoc(doc(db, 'orders', id), { status });
+      if (status === 'approved') {
+        toast.success('Order accepted! Customer notified that you are en route.', 'Order Approved');
+      } else if (status === 'completed') {
+        toast.success('Order marked as completed! Payment transferred to your balance.', 'Service Completed');
+      } else if (status === 'declined') {
+        toast.info('Order declined.', 'Order Update');
+      }
     } catch (e) {
       console.error(e);
-      alert(e.message);
+      toast.error(e.message || 'Failed to update order status', 'Error');
     }
   };
 

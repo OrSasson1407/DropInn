@@ -1,6 +1,6 @@
 {
   "name": "DropIn",
-  "description": "On-demand haircut booking platform connecting customers with local barbers",
+  "description": "On-demand at-home grooming and beauty services marketplace connecting customers with verified barbers, manicurists, estheticians, and stylists",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
