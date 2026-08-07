@@ -12,7 +12,16 @@ const API_KEY =
   (import.meta)?.env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
   globalThis?.GOOGLE_MAPS_PLATFORM_KEY ||
   '';
-const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
+
+// Check that API_KEY exists, is not default placeholder, and matches Google Maps key structure (starts with AIza)
+const isKeyValidFormat = 
+  Boolean(API_KEY) && 
+  API_KEY !== 'YOUR_API_KEY' && 
+  API_KEY !== 'undefined' &&
+  API_KEY !== 'null' &&
+  typeof API_KEY === 'string' &&
+  API_KEY.startsWith('AIza') &&
+  API_KEY.length >= 30;
 
 // Custom 'Warm Luxury' Dark Slate & Grey Map Style Matrix
 const LUXURY_GREY_MAP_STYLE = [
@@ -83,6 +92,22 @@ export default function MapContainer({
   const [radiusKm, setRadiusKm] = useState(defaultRadiusKm);
   const [pinnedName, setPinnedName] = useState("Tel Aviv Metropolitan Central Hub");
   const [isHovered, setIsHovered] = useState(false);
+  const [mapAuthError, setMapAuthError] = useState(false);
+
+  // Intercept Google Maps auth failure gracefully
+  useEffect(() => {
+    const prevAuthFailure = window.gm_authFailure;
+    window.gm_authFailure = () => {
+      console.warn('Google Maps API Key Authentication Failed. Switching to Grey Luxury Canvas Mode.');
+      setMapAuthError(true);
+      if (typeof prevAuthFailure === 'function') prevAuthFailure();
+    };
+    return () => {
+      window.gm_authFailure = prevAuthFailure;
+    };
+  }, []);
+
+  const canRenderGoogleMap = isKeyValidFormat && !mapAuthError;
 
   // Sync center changes
   useEffect(() => {
@@ -162,7 +187,7 @@ export default function MapContainer({
 
       {/* Map Display Box */}
       <div className="relative w-full rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-inner h-[360px]">
-        {hasValidKey ? (
+        {canRenderGoogleMap ? (
           <APIProvider apiKey={API_KEY} version="weekly">
             <Map
               defaultCenter={pinnedCoords}

@@ -12,7 +12,16 @@ const API_KEY =
   (import.meta)?.env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
   globalThis?.GOOGLE_MAPS_PLATFORM_KEY ||
   '';
-const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
+
+// Check that API_KEY exists, is not default placeholder, and matches Google Maps key structure (starts with AIza)
+const isKeyValidFormat = 
+  Boolean(API_KEY) && 
+  API_KEY !== 'YOUR_API_KEY' && 
+  API_KEY !== 'undefined' &&
+  API_KEY !== 'null' &&
+  typeof API_KEY === 'string' &&
+  API_KEY.startsWith('AIza') &&
+  API_KEY.length >= 30;
 
 // Preset landmark Tel Aviv / Central region coordinates
 const LANDMARKS = [
@@ -43,6 +52,22 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
   const [mapMode, setMapMode] = useState('interactive'); // 'interactive' | 'coverage'
   const [isLocating, setIsLocating] = useState(false);
   const [activeInfoWindow, setActiveInfoWindow] = useState(null);
+  const [mapAuthError, setMapAuthError] = useState(false);
+
+  // Intercept Google Maps auth failure gracefully to prevent console/dialog errors
+  useEffect(() => {
+    const prevAuthFailure = window.gm_authFailure;
+    window.gm_authFailure = () => {
+      console.warn('Google Maps API Key Authentication Failed. Falling back to Interactive Canvas Mode.');
+      setMapAuthError(true);
+      if (typeof prevAuthFailure === 'function') prevAuthFailure();
+    };
+    return () => {
+      window.gm_authFailure = prevAuthFailure;
+    };
+  }, []);
+
+  const canRenderGoogleMap = isKeyValidFormat && !mapAuthError;
 
   // Sync internal pin if selectedAddress matches a landmark or changes externally
   useEffect(() => {
@@ -170,7 +195,7 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
           </span>
           <h3 className="text-base font-black text-white mt-0.5 flex items-center gap-2">
             <span>Service Territory & Exact Location Pin</span>
-            {hasValidKey ? (
+            {canRenderGoogleMap ? (
               <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">
                 Google Maps API Active
               </span>
@@ -218,7 +243,7 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
       </div>
 
       {/* Google Maps Setup Instructions Banner if Key Missing */}
-      {!hasValidKey && (
+      {!canRenderGoogleMap && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-xs space-y-2 text-slate-300">
           <div className="flex items-center justify-between text-amber-400 font-extrabold">
             <div className="flex items-center gap-2">
@@ -243,7 +268,7 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
 
       {/* Map Rendering Stage */}
       <div className="relative w-full rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-inner group">
-        {hasValidKey ? (
+        {canRenderGoogleMap ? (
           /* Live Google Maps JS API View */
           <div style={{ width: '100%', height: '340px' }}>
             <APIProvider apiKey={API_KEY} version="weekly">
