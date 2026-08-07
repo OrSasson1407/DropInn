@@ -1,0 +1,43 @@
+name: DropIn v2 CI/CD & Security Rules Validation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-validate:
+    name: Build, Lint & Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Root Dependencies
+        run: npm ci || npm install
+
+      - name: Install Frontend Dependencies
+        run: cd frontend && npm install
+
+      - name: Lint Codebase & Build Validation
+        run: npm run lint
+
+      - name: Validate Firestore Security Rules Syntax
+        run: |
+          if [ -f firestore.rules ]; then
+            echo "Validating firestore.rules structure..."
+            grep -q "rules_version = '2';" firestore.rules || (echo "Missing rules_version = '2'" && exit 1)
+            grep -q "service cloud.firestore" firestore.rules || (echo "Missing service cloud.firestore declaration" && exit 1)
+            echo "firestore.rules syntax check passed."
+          fi
+
+      - name: Run Test Suite (Unit, Component, Integration, Rules)
+        run: npm run test

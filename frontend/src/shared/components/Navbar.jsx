@@ -1,267 +1,276 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
 import DropInLogo from './DropInLogo';
 import NotificationBell from './NotificationBell';
-import { 
-  Scissors, User, ShieldCheck, LogOut, Menu, X, Compass, 
-  Briefcase, ChevronRight, Clock, MapPin, Sparkles, ShoppingBag,
-  HeartHandshake, Sparkle
-} from 'lucide-react';
+import LocationSelector from './LocationSelector';
+import GlobalSearch from './GlobalSearch';
+import AccountDropdown from './AccountDropdown';
+import { getNavItemsForUser } from '../config/navConfig';
+import { Menu, X, ChevronRight, LogOut, Compass } from 'lucide-react';
 
 export default function Navbar() {
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, userRole, isAdmin, isProvider } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [activeRoleMode, setActiveRoleMode] = useState(() => {
+    return localStorage.getItem('dropin_active_role_mode') || '';
+  });
+
+  // Handle active role mode persistence
+  const handleSetRoleMode = (mode) => {
+    setActiveRoleMode(mode);
+    localStorage.setItem('dropin_active_role_mode', mode);
+  };
+
+  // Scroll detection for condensed header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 60) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
       await logout();
       navigate('/');
     } catch (err) {
-      console.error(err);
+      console.error('Logout error:', err);
     }
   };
 
-  const isActive = (path) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
+  // Single Source of Truth for nav items
+  const navItems = getNavItemsForUser({
+    userRole,
+    activeRoleMode,
+    isAdmin,
+    currentUser
+  });
+
+  const isActivePath = (path) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname === path || location.pathname.startsWith(path);
+  };
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 text-white shadow-xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center group">
-            <DropInLogo size="md" />
-          </Link>
+    <>
+      {/* Accessibility: Skip to main content link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-amber-500 focus:text-slate-950 focus:font-black focus:rounded-xl focus:shadow-2xl focus:outline-none"
+      >
+        Skip to main content
+      </a>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1.5">
-            <Link
-              to="/"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                location.pathname === '/'
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>Explore Pros</span>
-            </Link>
-
-            <Link
-              to="/customer/style-feed"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                isActive('/customer/style-feed')
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Style Feed</span>
-            </Link>
-
-            <Link
-              to="/customer/subscriptions"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                isActive('/customer/subscriptions')
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <span>Passes</span>
-            </Link>
-
-            <Link
-              to="/customer/rewards"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                isActive('/customer/rewards')
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <HeartHandshake className="w-3.5 h-3.5 text-rose-400" />
-              <span>Rewards</span>
-            </Link>
-
-            <Link
-              to="/customer/orders"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                isActive('/customer/orders')
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
-              <span>Orders</span>
-            </Link>
-
-            <Link
-              to="/provider"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                isActive('/provider')
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5 text-amber-400" />
-              <span>Provider Tools</span>
-            </Link>
-
-            {isAdmin && (
-              <Link
-                to="/docs/architecture"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                  isActive('/docs/architecture')
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>v2 Docs</span>
+      <header
+        role="banner"
+        className={`sticky top-0 z-50 transition-all duration-300 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 text-white shadow-xl ${
+          isScrolled ? 'py-1 shadow-2xl bg-slate-900/98' : 'py-2.5'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-12 sm:h-14">
+            
+            {/* Left Section: Logo & Desktop Navigation */}
+            <div className="flex items-center gap-4 lg:gap-6">
+              <Link to="/" className="flex items-center group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-xl">
+                <DropInLogo size={isScrolled ? 'sm' : 'md'} />
               </Link>
-            )}
-          </nav>
 
-          {/* Location & Auth Actions */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-[11px] font-medium text-slate-300">
-              <MapPin className="w-3.5 h-3.5 text-amber-400" />
-              <span>Israel (All Regions)</span>
+              {/* Location Selector (Desktop) */}
+              <div className="hidden lg:block">
+                <LocationSelector />
+              </div>
+
+              {/* Desktop Nav Items (Role-filtered) */}
+              <nav aria-label="Main navigation" className="hidden md:flex items-center gap-1">
+                {navItems.map((item) => {
+                  const IconComp = item.icon;
+                  const active = isActivePath(item.path);
+
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                        active
+                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                      }`}
+                    >
+                      <IconComp className={`w-3.5 h-3.5 ${active ? 'text-amber-400' : 'text-slate-400'}`} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
             </div>
 
-            <NotificationBell />
-            <ThemeToggle showLabel={false} />
+            {/* Right Section: Search, Bell, Theme, Language/RTL, Account/Auth */}
+            <div className="hidden md:flex items-center gap-2.5">
+              <GlobalSearch />
+              <NotificationBell />
+              
+              {/* Hebrew/RTL Language Toggle */}
+              <button
+                onClick={() => {
+                  const currentDir = document.documentElement.dir || 'ltr';
+                  const nextDir = currentDir === 'ltr' ? 'rtl' : 'ltr';
+                  document.documentElement.dir = nextDir;
+                  document.documentElement.lang = nextDir === 'rtl' ? 'he' : 'en';
+                  localStorage.setItem('dropin_language_dir', nextDir);
+                  window.dispatchEvent(new Event('language_changed'));
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-400 border border-slate-700 flex items-center gap-1 transition-all"
+                title="Toggle Hebrew / RTL Mode"
+              >
+                <span>🌐</span>
+                <span className="font-mono text-[11px]">{document.documentElement.dir === 'rtl' ? 'עברית' : 'EN'}</span>
+              </button>
 
-            {currentUser ? (
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-                <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800 text-xs text-slate-200">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="font-mono text-slate-300 truncate max-w-[120px]">
-                    {currentUser.email}
-                  </span>
+              <ThemeToggle showLabel={false} />
+
+              {currentUser ? (
+                <AccountDropdown
+                  activeRoleMode={activeRoleMode}
+                  setActiveRoleMode={handleSetRoleMode}
+                />
+              ) : (
+                <div className="flex items-center gap-2 pl-1 border-l border-slate-800">
+                  <Link
+                    to="/customer/login"
+                    className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-xl transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/customer/signup"
+                    className="px-3.5 py-1.5 text-xs font-extrabold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl shadow-md shadow-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-all flex items-center gap-1"
+                  >
+                    <span>Book Service</span>
+                    <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
+                  </Link>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/customer/login"
-                  className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/customer/signup"
-                  className="px-4 py-2 text-xs font-extrabold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5"
-                >
-                  <span>Book At Home</span>
-                  <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
-                </Link>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Mobile Right Controls */}
-          <div className="flex items-center gap-2 md:hidden">
-            <ThemeToggle showLabel={false} />
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+            {/* Mobile Right Controls */}
+            <div className="flex items-center gap-2 md:hidden">
+              <GlobalSearch />
+              <LocationSelector />
+              <ThemeToggle showLabel={false} />
+              
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors"
+                aria-expanded={mobileMenuOpen}
+                aria-label="Toggle navigation menu"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5 text-amber-400" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
 
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-6 space-y-3">
-          <Link
-            to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800"
-          >
-            <Compass className="w-5 h-5 text-amber-400" />
-            <span>Explore Pros</span>
-          </Link>
-
-          <Link
-            to="/customer/orders"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800"
-          >
-            <ShoppingBag className="w-5 h-5 text-amber-400" />
-            <span>My Orders Tracker</span>
-          </Link>
-
-          <Link
-            to="/provider"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800"
-          >
-            <Briefcase className="w-5 h-5 text-amber-400" />
-            <span>Provider Portal</span>
-          </Link>
-
-          <Link
-            to="/admin"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800"
-          >
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            <span>Admin Console</span>
-          </Link>
-
-          <div className="pt-4 border-t border-slate-800 space-y-2">
-            {currentUser ? (
-              <div className="space-y-2">
-                <div className="px-3 py-2 text-xs font-mono text-slate-400 bg-slate-950 rounded-xl border border-slate-800 truncate">
-                  Logged in as {currentUser.email}
-                </div>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-rose-400 hover:bg-rose-500/10 text-xs font-bold border border-slate-700"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <Link
-                  to="/customer/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-center px-4 py-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold border border-slate-700"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/customer/signup"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-center px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-black"
-                >
-                  Book Service
-                </Link>
-              </div>
-            )}
           </div>
         </div>
-      )}
-    </header>
+
+        {/* Mobile Dropdown Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-3 pb-6 space-y-3 shadow-2xl animate-in slide-in-from-top-2 duration-200">
+            {/* Nav Links (Generated from config) */}
+            <div className="space-y-1">
+              <div className="text-[10px] font-black uppercase text-slate-500 px-3 py-1 tracking-wider">
+                {activeRoleMode ? `${activeRoleMode.toUpperCase()} MENU` : 'NAVIGATION'}
+              </div>
+              {navItems.map((item) => {
+                const IconComp = item.icon;
+                const active = isActivePath(item.path);
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      active
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <IconComp className={`w-4 h-4 ${active ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* User Account / Auth Mobile Block */}
+            <div className="pt-3 border-t border-slate-800 space-y-2">
+              {currentUser ? (
+                <div className="space-y-2">
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div className="truncate">
+                      <div className="text-xs font-bold text-white truncate">
+                        {currentUser.displayName || currentUser.email}
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-400 truncate">
+                        {currentUser.email}
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      {activeRoleMode || userRole || 'customer'}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-950 text-rose-400 hover:bg-rose-500/10 text-xs font-bold border border-slate-800"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <Link
+                    to="/customer/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-center px-4 py-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold border border-slate-700"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/customer/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-center px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20"
+                  >
+                    Book Service
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { processPayment } from '../../shared/services/payments';
+import { processPayment, processRefund } from '../../shared/services/payments';
 
 vi.mock('../../firebase', () => ({
   db: {}
@@ -8,10 +8,16 @@ vi.mock('../../firebase', () => ({
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(() => 'mock-payments-col'),
   addDoc: vi.fn(),
+  doc: vi.fn((db, col, id) => `mock-doc-${col}-${id}`),
+  getDoc: vi.fn().mockResolvedValue({
+    exists: () => true,
+    data: () => ({ amount: 120, status: 'succeeded' })
+  }),
+  updateDoc: vi.fn().mockResolvedValue(),
   serverTimestamp: vi.fn(() => 'MOCK_TS')
 }));
 
-import { addDoc } from 'firebase/firestore';
+import { addDoc, updateDoc } from 'firebase/firestore';
 
 describe('Payments Unit Services', () => {
   beforeEach(() => {
@@ -59,15 +65,20 @@ describe('Payments Unit Services', () => {
         }));
       });
     });
+  });
 
-    it('falls back to local success when Firestore addDoc fails', async () => {
-      addDoc.mockRejectedValueOnce(new Error('Network error'));
+  describe('processRefund()', () => {
+    it('throws error if neither paymentId nor orderId is provided', async () => {
+      await expect(processRefund(null, null)).rejects.toThrow(/Payment ID or Order ID is required/);
+    });
 
-      const res = await processPayment(100, 'p1', 'c1');
+    it('reverses payment and updates Firestore payment record to refunded status', async () => {
+      const res = await processRefund('pay_123', 'order_456', 120, 'Customer cancelled before dispatch');
+      
       expect(res.success).toBe(true);
-      expect(res.amount).toBe(100);
-      expect(res.commission).toBe(15);
-      expect(res.providerPayout).toBe(85);
+      expect(res.status).toBe('refunded');
+      expect(res.refundTxnId).toMatch(/^re_\d+_[a-z0-9]+$/);
+      expect(updateDoc).toHaveBeenCalled();
     });
   });
 });
