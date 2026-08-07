@@ -1,0 +1,29 @@
+{
+  "entities": {
+    "AnalyticsDaily": {
+      "title": "Analytics Daily Rollup",
+      "description": "Daily aggregated metrics for booking volume, GMV, platform commission, and churn",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "description": "Date ISO string YYYY-MM-DD" },
+        "bookingVolume": { "type": "number", "description": "Total bookings placed on this date" },
+        "completedBookings": { "type": "number", "description": "Count of completed bookings" },
+        "cancelledBookings": { "type": "number", "description": "Count of cancelled bookings" },
+        "gmv": { "type": "number", "description": "Gross Merchandise Value in NIS" },
+        "platformCommission": { "type": "number", "description": "15% platform take in NIS" },
+        "providerPayouts": { "type": "number", "description": "Provider payout sum in NIS" },
+        "churnRate": { "type": "number", "description": "Percentage cancellation or churn rate" },
+        "activeProviders": { "type": "number", "description": "Active provider count" },
+        "activeCustomers": { "type": "number", "description": "Active customer count" },
+        "updatedAt": { "type": "string", "description": "Timestamp of aggregation" }
+      },
+      "required": ["date", "bookingVolume", "gmv", "churnRate"]
+    }
+  },
+  "firestore": {
+    "/analytics_daily/{date}": {
+      "schema": "AnalyticsDaily",
+      "description": "Daily metrics aggregated by scheduled Cloud Functions"
+    }
+  }
+}

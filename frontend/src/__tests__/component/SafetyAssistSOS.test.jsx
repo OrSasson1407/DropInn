@@ -1,16 +1,20 @@
+// @vitest-environment jsdom
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+
+expect.extend(matchers);
 import SafetyAssistSOS from '../../shared/components/SafetyAssistSOS';
-import * as AuthContextModule from '../../shared/context/AuthContext';
 import { ToastProvider } from '../../shared/context/ToastContext';
 
 vi.mock('../../firebase', () => ({
-  db: {}
+  db: {},
+  auth: { currentUser: { uid: 'u1', email: 'cust@example.com' } }
 }));
 
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
+  collection: vi.fn(() => ({ id: 'mock_col' })),
   addDoc: vi.fn().mockResolvedValue({ id: 'sos_123' }),
   serverTimestamp: vi.fn(() => 'TS')
 }));
@@ -28,22 +32,19 @@ describe('SafetyAssistSOS Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders trigger button', () => {
-    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
-      currentUser: { uid: 'u1', email: 'user@example.com' }
-    });
+  afterEach(() => {
+    cleanup();
+  });
 
+  it('renders trigger button', () => {
     renderSOS({ activeOrderId: 'ord_1', providerId: 'prov_1' });
     expect(screen.getByText('Safety SOS')).toBeInTheDocument();
   });
 
   it('opens SOS modal when button clicked', () => {
-    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
-      currentUser: { uid: 'u1', email: 'user@example.com' }
-    });
-
     renderSOS({ activeOrderId: 'ord_1', providerId: 'prov_1' });
-    fireEvent.click(screen.getByText('Safety SOS'));
+    const triggerBtn = screen.getByText('Safety SOS').closest('button');
+    fireEvent.click(triggerBtn);
 
     expect(screen.getByText('Emergency Safety Assist')).toBeInTheDocument();
     expect(screen.getByText(/Police \(100\)/i)).toBeInTheDocument();
@@ -51,18 +52,15 @@ describe('SafetyAssistSOS Component', () => {
   });
 
   it('dispatches SOS alert doc to firestore on emergency alert trigger', async () => {
-    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
-      currentUser: { uid: 'cust_100', email: 'cust@example.com' }
-    });
-
     renderSOS({ activeOrderId: 'ord_1', providerId: 'prov_1' });
-    fireEvent.click(screen.getByText('Safety SOS'));
+    const triggerBtn = screen.getByText('Safety SOS').closest('button');
+    fireEvent.click(triggerBtn);
 
-    const sosAlertBtn = screen.getByText(/TRIGGER EMERGENCY SOS ALERT/i);
+    const sosAlertBtn = screen.getByText(/TRIGGER EMERGENCY SOS ALERT/i).closest('button');
     fireEvent.click(sosAlertBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('SOS Incident Logged & Dispatched!')).toBeInTheDocument();
+      expect(screen.getByText(/SOS Incident Logged & Dispatched!/i)).toBeInTheDocument();
     });
   });
 });

@@ -3,13 +3,13 @@ import { db } from '../../firebase';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
-import { submitOrderReview, cancelOrder } from '../../shared/services/firestore';
+import { submitOrderReview, cancelOrder, updateProviderLocation } from '../../shared/services/firestore';
 import { getGoogleMapsNavigationUrl } from '../../shared/services/maps';
 import ServiceCoverageMap from '../../shared/components/ServiceCoverageMap';
 import { 
   Clock, MapPin, Scissors, CheckCircle2, Loader2, Star, 
   Sparkles, ShieldCheck, Navigation, ExternalLink, Calendar,
-  ChevronRight, AlertCircle, RefreshCw, XCircle, Map
+  ChevronRight, AlertCircle, RefreshCw, XCircle, Map, Radio, Zap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -26,6 +26,28 @@ export default function CustomerOrders() {
   const [commentMap, setCommentMap] = useState({});
   const [submittingReviewId, setSubmittingReviewId] = useState(null);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [simulatingLocOrderId, setSimulatingLocOrderId] = useState(null);
+
+  const handleSimulateGPSMove = async (orderId) => {
+    setSimulatingLocOrderId(orderId);
+    try {
+      const randomLat = Number((32.0636 + (Math.random() - 0.5) * 0.02).toFixed(4));
+      const randomLng = Number((34.7734 + (Math.random() - 0.5) * 0.02).toFixed(4));
+      const speedKm = Math.round(18 + Math.random() * 22);
+      await updateProviderLocation(orderId, {
+        lat: randomLat,
+        lng: randomLng,
+        speed: `${speedKm} km/h`,
+        address: `Tel Aviv Metro Sector (${randomLat}, ${randomLng})`,
+        heading: Math.round(Math.random() * 360)
+      });
+      toast.success('Live GPS coordinates updated in Firestore! Real-time listener received new provider location.', 'Real-Time Firestore Update');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update GPS location', 'Simulation Error');
+    } finally {
+      setSimulatingLocOrderId(null);
+    }
+  };
 
   useEffect(() => {
     if (!currentUser) {
@@ -265,19 +287,81 @@ export default function CustomerOrders() {
                     </div>
                   )}
 
-                  {isApproved && (
-                    <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-amber-300 flex items-center justify-between gap-2.5 flex-wrap">
-                      <div className="flex items-center gap-2.5">
-                        <Navigation className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
-                        <span>Provider {providerName} has accepted your order and is en route. Expected arrival in <strong>15-20 minutes</strong>.</span>
+                  {(isApproved || order.providerLocation) && (
+                    <div className="bg-slate-900 border border-amber-500/30 p-4 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                          </span>
+                          <span className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                            <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                            <span>Real-Time Order Tracking (Pillar 1)</span>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSimulateGPSMove(order.id)}
+                            disabled={simulatingLocOrderId === order.id}
+                            className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-extrabold flex items-center gap-1.5 transition-all"
+                          >
+                            {simulatingLocOrderId === order.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Zap className="w-3 h-3 text-amber-400" />
+                            )}
+                            <span>Simulate GPS Move</span>
+                          </button>
+
+                          <button
+                            onClick={() => setShowMapOrderId(showMapOrderId === order.id ? null : order.id)}
+                            className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-md hover:bg-amber-400 transition-all"
+                          >
+                            <Map className="w-3.5 h-3.5" />
+                            <span>{showMapOrderId === order.id ? 'Hide Live Map' : 'View Live Tracking Map'}</span>
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => setShowMapOrderId(showMapOrderId === order.id ? null : order.id)}
-                        className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-1 shrink-0"
-                      >
-                        <Map className="w-3.5 h-3.5" />
-                        <span>{showMapOrderId === order.id ? 'Hide Live Map' : 'View Live Tracking Map'}</span>
-                      </button>
+
+                      <div className="text-xs text-slate-300 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Navigation className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
+                          <span>Provider <strong>{providerName}</strong> has accepted your order and is en route.</span>
+                        </div>
+
+                        {order.providerLocation ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-[11px] font-mono">
+                            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                              <span className="text-[9px] text-slate-500 uppercase block font-sans">Latitude</span>
+                              <span className="text-amber-400 font-bold">{typeof order.providerLocation.lat === 'number' ? order.providerLocation.lat.toFixed(4) : order.providerLocation.lat}</span>
+                            </div>
+
+                            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                              <span className="text-[9px] text-slate-500 uppercase block font-sans">Longitude</span>
+                              <span className="text-amber-400 font-bold">{typeof order.providerLocation.lng === 'number' ? order.providerLocation.lng.toFixed(4) : order.providerLocation.lng}</span>
+                            </div>
+
+                            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                              <span className="text-[9px] text-slate-500 uppercase block font-sans">Current Speed</span>
+                              <span className="text-emerald-400 font-bold">{order.providerLocation.speed || '24 km/h'}</span>
+                            </div>
+
+                            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                              <span className="text-[9px] text-slate-500 uppercase block font-sans">GPS Last Ping</span>
+                              <span className="text-slate-300 font-bold">
+                                {order.providerLocation.updatedAt ? new Date(order.providerLocation.updatedAt).toLocaleTimeString() : 'Just now'}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-amber-400/80 italic pt-1">
+                            Pillar 1 Firestore listener active — awaiting GPS broadcast...
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -292,7 +376,11 @@ export default function CustomerOrders() {
                 {/* Live Dispatch Tracking Map Container */}
                 {showMapOrderId === order.id && (
                   <div className="pt-2">
-                    <ServiceCoverageMap selectedAddress={order.address} />
+                    <ServiceCoverageMap 
+                      selectedAddress={order.address} 
+                      orderId={order.id}
+                      providerLocation={order.providerLocation}
+                    />
                   </div>
                 )}
 

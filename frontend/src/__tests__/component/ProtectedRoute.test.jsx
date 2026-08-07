@@ -1,13 +1,10 @@
+// @vitest-environment jsdom
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../../shared/components/ProtectedRoute';
 import * as AuthContextModule from '../../shared/context/AuthContext';
-
-vi.mock('../../shared/context/AuthContext', () => ({
-  useAuth: vi.fn()
-}));
 
 const renderWithRouter = (ui, initialRoute = '/protected') => {
   return render(

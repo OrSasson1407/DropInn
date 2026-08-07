@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+[dir="rtl"] {
+  --font-heading: 'Heebo', 'Rubik', system-ui, sans-serif;
+  --font-body: 'Assistant', 'Rubik', system-ui, sans-serif;
+  text-align: right;
+}
+
+[dir="rtl"] .font-mono {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
 :root {
   --font-heading: 'Fraunces', serif;
   --font-body: 'Instrument Sans', sans-serif;

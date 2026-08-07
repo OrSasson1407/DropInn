@@ -3,6 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
+import { getMessaging, isSupported } from 'firebase/messaging';
 import defaultConfig from '../../firebase-applet-config.json';
 
 const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
@@ -22,8 +23,18 @@ export const auth = getAuth(app);
 export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
-export const functions = getFunctions(app);
-export const storage = getStorage(app);
+export const functions = typeof getFunctions === 'function' ? getFunctions(app) : null;
+export const storage = typeof getStorage === 'function' ? getStorage(app) : null;
+
+let messagingInstance = null;
+export const getMessagingInstance = async () => {
+  if (messagingInstance) return messagingInstance;
+  if (typeof window !== 'undefined' && typeof isSupported === 'function' && await isSupported()) {
+    messagingInstance = getMessaging(app);
+    return messagingInstance;
+  }
+  return null;
+};
 
 // Test Firestore connection on startup
 async function testConnection() {

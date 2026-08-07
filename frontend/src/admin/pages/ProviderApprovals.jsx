@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { ShieldCheck, Check, Clock, UserCheck, Search, FileText, Activity } from 'lucide-react';
+import { ShieldCheck, Check, Clock, UserCheck, Search, FileText, Activity, ShieldAlert } from 'lucide-react';
 import TransactionsMonitor from './TransactionsMonitor';
+import VerificationDocumentsAdmin from './VerificationDocumentsAdmin';
 
 export default function ProviderApprovals() {
   const [providers, setProviders] = useState([]);
-  const [activeTab, setActiveTab] = useState('approvals');
+  const [activeTab, setActiveTab] = useState('verification_docs');
   const [loading, setLoading] = useState(true);
   const [selectedDocUrl, setSelectedDocUrl] = useState(null);
 
@@ -41,7 +42,18 @@ export default function ProviderApprovals() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
+          <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 flex-wrap">
+            <button
+              onClick={() => setActiveTab('verification_docs')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                activeTab === 'verification_docs'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Verification Documents</span>
+            </button>
             <button
               onClick={() => setActiveTab('approvals')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
@@ -51,7 +63,7 @@ export default function ProviderApprovals() {
               }`}
             >
               <UserCheck className="w-4 h-4" />
-              <span>Provider Approvals</span>
+              <span>Provider Profiles</span>
             </button>
             <button
               onClick={() => setActiveTab('transactions')}
@@ -68,7 +80,9 @@ export default function ProviderApprovals() {
         </div>
       </div>
 
-      {activeTab === 'transactions' ? (
+      {activeTab === 'verification_docs' ? (
+        <VerificationDocumentsAdmin />
+      ) : activeTab === 'transactions' ? (
         <TransactionsMonitor />
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">

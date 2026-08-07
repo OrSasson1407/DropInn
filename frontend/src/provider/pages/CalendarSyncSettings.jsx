@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Calendar, RefreshCw, CheckCircle2, ShieldCheck, Link2, ExternalLink, Copy } from 'lucide-react';
+import { Calendar, RefreshCw, CheckCircle2, ShieldCheck, Link2, ExternalLink, Copy, Download } from 'lucide-react';
 import { useToast } from '../../shared/context/ToastContext';
 import PageHeaderBar from '../../shared/components/PageHeaderBar';
+import { downloadICalFile, syncWithGoogleCalendar } from '../../shared/services/calendar';
 
 export default function CalendarSyncSettings() {
   const { toast } = useToast();
@@ -9,14 +10,44 @@ export default function CalendarSyncSettings() {
   const [outlookConnected, setOutlookConnected] = useState(false);
   const [iCalUrl, setICalUrl] = useState('https://calendar.google.com/calendar/ical/pro_feed_88291.ics');
   const [autoBlockBusy, setAutoBlockBusy] = useState(true);
+  const [syncingTest, setSyncingTest] = useState(false);
 
   const handleToggleGoogle = () => {
     setGoogleConnected((prev) => {
       const next = !prev;
-      if (next) toast.success('Google Calendar OAuth connected! Busy times auto-synced.', 'Calendar Connected');
+      if (next) toast.success('Google Calendar OAuth connected with scope https://www.googleapis.com/auth/calendar.events!', 'Calendar Connected');
       else toast.info('Google Calendar unlinked.', 'Calendar Unlinked');
       return next;
     });
+  };
+
+  const handleTestSyncGoogle = async () => {
+    setSyncingTest(true);
+    try {
+      const dummyOrder = {
+        id: 'DEMO-' + Math.floor(1000 + Math.random() * 9000),
+        address: 'Rothschild Blvd 45, Tel Aviv',
+        price: 120,
+        createdAt: { toDate: () => new Date() }
+      };
+      await syncWithGoogleCalendar(dummyOrder);
+      toast.success('Google Calendar event template opened successfully!', 'Sync Tested');
+    } catch (err) {
+      toast.error(err.message || 'Failed to sync with Google Calendar', 'Sync Error');
+    } finally {
+      setSyncingTest(false);
+    }
+  };
+
+  const handleDownloadSampleICal = () => {
+    const dummyOrder = {
+      id: 'APPT-' + Math.floor(1000 + Math.random() * 9000),
+      address: 'Dizengoff St 100, Tel Aviv',
+      price: 150,
+      createdAt: { toDate: () => new Date() }
+    };
+    downloadICalFile(dummyOrder);
+    toast.success('Sample appointment .ics file downloaded!', 'iCal Downloaded');
   };
 
   const handleToggleOutlook = () => {
@@ -59,27 +90,40 @@ export default function CalendarSyncSettings() {
 
       <div className="space-y-6">
         {/* Google Calendar Box */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex items-center justify-between gap-4 shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0">
-              <Calendar className="w-6 h-6" />
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-white">Google Calendar Sync</h3>
+                <p className="text-xs text-slate-400">OAuth API Scope: calendar.events</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-extrabold text-base text-white">Google Calendar Sync</h3>
-              <p className="text-xs text-slate-400">2-Way sync via Google Workspace OAuth API</p>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleTestSyncGoogle}
+                disabled={syncingTest}
+                className="py-2.5 px-3.5 rounded-2xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 text-xs font-bold transition-all flex items-center gap-1.5"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Test Event Sync</span>
+              </button>
+
+              <button
+                onClick={handleToggleGoogle}
+                className={`py-2.5 px-4 rounded-2xl font-black text-xs transition-all ${
+                  googleConnected
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-amber-500 text-slate-950 hover:bg-amber-400'
+                }`}
+              >
+                {googleConnected ? 'Connected (Active)' : 'Connect Google'}
+              </button>
             </div>
           </div>
-
-          <button
-            onClick={handleToggleGoogle}
-            className={`py-2.5 px-4 rounded-2xl font-black text-xs transition-all ${
-              googleConnected
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                : 'bg-amber-500 text-slate-950 hover:bg-amber-400'
-            }`}
-          >
-            {googleConnected ? 'Connected (Active)' : 'Connect Google'}
-          </button>
         </div>
 
         {/* Outlook Box */}

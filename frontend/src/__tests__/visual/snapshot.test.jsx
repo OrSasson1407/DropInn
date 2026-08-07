@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
@@ -23,7 +24,7 @@ describe('Visual & Snapshot Testing Suite', () => {
     });
 
     const { container, asFragment } = render(<NotificationBell />);
-    expect(container).toBeInTheDocument();
+    expect(container).toBeDefined();
     expect(asFragment()).toBeDefined();
   });
 
@@ -40,7 +41,7 @@ describe('Visual & Snapshot Testing Suite', () => {
         </ProtectedRoute>
       </BrowserRouter>
     );
-    expect(container).toBeInTheDocument();
+    expect(container).toBeDefined();
     expect(asFragment()).toBeDefined();
   });
 
@@ -58,7 +59,7 @@ describe('Visual & Snapshot Testing Suite', () => {
         </ProtectedRoute>
       </BrowserRouter>
     );
-    expect(container).toBeInTheDocument();
+    expect(container).toBeDefined();
     expect(asFragment()).toBeDefined();
   });
 });

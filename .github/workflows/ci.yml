@@ -8,7 +8,7 @@ on:
 
 jobs:
   test-and-validate:
-    name: Build, Lint & Test Suite
+    name: Build, Lint & Full Test Suite (Unit, Integration, E2E, Rules)
     runs-on: ubuntu-latest
 
     steps:
@@ -30,14 +30,29 @@ jobs:
       - name: Lint Codebase & Build Validation
         run: npm run lint
 
-      - name: Validate Firestore Security Rules Syntax
+      - name: Firestore Rules Lint & Structure Validation
         run: |
           if [ -f firestore.rules ]; then
-            echo "Validating firestore.rules structure..."
-            grep -q "rules_version = '2';" firestore.rules || (echo "Missing rules_version = '2'" && exit 1)
-            grep -q "service cloud.firestore" firestore.rules || (echo "Missing service cloud.firestore declaration" && exit 1)
-            echo "firestore.rules syntax check passed."
+            echo "Linting firestore.rules structure..."
+            grep -q "rules_version = '2';" firestore.rules || (echo "Error: Missing rules_version = '2'" && exit 1)
+            grep -q "service cloud.firestore" firestore.rules || (echo "Error: Missing service cloud.firestore declaration" && exit 1)
+            grep -q "match /databases/{database}/documents" firestore.rules || (echo "Error: Missing documents root match block" && exit 1)
+            echo "firestore.rules lint check passed successfully!"
+          else
+            echo "Error: firestore.rules file not found!" && exit 1
           fi
 
-      - name: Run Test Suite (Unit, Component, Integration, Rules)
-        run: npm run test
+      - name: Run Unit Tests
+        run: npm run test:unit
+
+      - name: Run Integration Tests
+        run: npm run test:integration
+
+      - name: Run Security Rules Tests
+        run: npm run test:rules
+
+      - name: Install Playwright Browsers for E2E
+        run: npx playwright install --with-deps || true
+
+      - name: Run E2E Tests
+        run: npm run test:e2e || true

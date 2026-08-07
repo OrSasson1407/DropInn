@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
@@ -5,6 +6,7 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import { BrowserRouter } from 'react-router-dom';
 import Home from '../../customer/pages/Home';
 import ProtectedRoute from '../../shared/components/ProtectedRoute';
+import * as AuthContextModule from '../../shared/context/AuthContext';
 
 expect.extend(toHaveNoViolations);
 
@@ -35,6 +37,12 @@ describe('Accessibility (a11y) Automated Audits', () => {
   });
 
   it('ProtectedRoute component renders accessible loading/fallback HTML structure', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: { uid: 'u1' },
+      loading: false,
+      isAdmin: false
+    });
+
     const { container } = render(
       <BrowserRouter>
         <ProtectedRoute>

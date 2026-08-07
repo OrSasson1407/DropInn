@@ -44,7 +44,7 @@ const PROVIDER_BASES = [
   { id: 'p3', name: 'David K. (Mobile Groomer #3)', lat: 32.1500, lng: 34.7900, x: 195, y: 90, category: 'Barber' }
 ];
 
-export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, isCompact = false, orderId = null }) {
+export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, isCompact = false, orderId = null, providerLocation = null }) {
   const [pinnedPos, setPinnedPos] = useState({ x: 230, y: 190 });
   const [googleCoords, setGoogleCoords] = useState({ lat: 32.0636, lng: 34.7734 });
   const [pinnedName, setPinnedName] = useState('Rothschild Blvd 45, Tel Aviv');
@@ -55,7 +55,17 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
   const [isLocating, setIsLocating] = useState(false);
   const [activeInfoWindow, setActiveInfoWindow] = useState(null);
   const [mapAuthError, setMapAuthError] = useState(false);
-  const [liveProviderLoc, setLiveProviderLoc] = useState(null);
+  const [liveProviderLoc, setLiveProviderLoc] = useState(providerLocation);
+
+  // Sync prop changes for provider location
+  useEffect(() => {
+    if (providerLocation) {
+      setLiveProviderLoc(providerLocation);
+      if (providerLocation.lat && providerLocation.lng) {
+        setGoogleCoords({ lat: Number(providerLocation.lat), lng: Number(providerLocation.lng) });
+      }
+    }
+  }, [providerLocation]);
 
   // Firestore listener for real-time order tracking
   useEffect(() => {
@@ -67,10 +77,12 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
         if (data.providerLocation) {
           setLiveProviderLoc(data.providerLocation);
           if (data.providerLocation.lat && data.providerLocation.lng) {
-            setGoogleCoords({ lat: data.providerLocation.lat, lng: data.providerLocation.lng });
+            setGoogleCoords({ lat: Number(data.providerLocation.lat), lng: Number(data.providerLocation.lng) });
           }
         }
       }
+    }, (error) => {
+      console.warn('Real-time order location snapshot error:', error);
     });
     return () => unsubscribe();
   }, [orderId]);

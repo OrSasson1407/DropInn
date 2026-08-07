@@ -34,7 +34,7 @@ export default function PageHeaderBar({
             title="Go back"
             aria-label="Go back to previous page"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
           </button>
 
           <div className="space-y-0.5 min-w-0">
@@ -47,7 +47,7 @@ export default function PageHeaderBar({
                 </Link>
                 {breadcrumbs.map((crumb, idx) => (
                   <React.Fragment key={idx}>
-                    <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+                    <ChevronRight className="w-3 h-3 text-slate-600 shrink-0 rtl:rotate-180" />
                     {crumb.path ? (
                       <Link to={crumb.path} className="hover:text-amber-400 truncate max-w-[120px]">
                         {crumb.label}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
@@ -9,9 +10,10 @@ import LocationSelector from './LocationSelector';
 import GlobalSearch from './GlobalSearch';
 import AccountDropdown from './AccountDropdown';
 import { getNavItemsForUser } from '../config/navConfig';
-import { Menu, X, ChevronRight, LogOut, Compass } from 'lucide-react';
+import { Menu, X, ChevronRight, LogOut, Compass, Languages } from 'lucide-react';
 
 export default function Navbar() {
+  const { t, i18n } = useTranslation();
   const { currentUser, userRole, isAdmin, isProvider } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -130,18 +132,14 @@ export default function Navbar() {
               {/* Hebrew/RTL Language Toggle */}
               <button
                 onClick={() => {
-                  const currentDir = document.documentElement.dir || 'ltr';
-                  const nextDir = currentDir === 'ltr' ? 'rtl' : 'ltr';
-                  document.documentElement.dir = nextDir;
-                  document.documentElement.lang = nextDir === 'rtl' ? 'he' : 'en';
-                  localStorage.setItem('dropin_language_dir', nextDir);
-                  window.dispatchEvent(new Event('language_changed'));
+                  const nextLang = i18n.language === 'he' ? 'en' : 'he';
+                  i18n.changeLanguage(nextLang);
                 }}
-                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-400 border border-slate-700 flex items-center gap-1 transition-all"
-                title="Toggle Hebrew / RTL Mode"
+                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-400 border border-slate-700 flex items-center gap-1.5 transition-all"
+                title={i18n.language === 'he' ? 'Switch to English' : 'עבור לעברית'}
               >
-                <span>🌐</span>
-                <span className="font-mono text-[11px]">{document.documentElement.dir === 'rtl' ? 'עברית' : 'EN'}</span>
+                <Languages className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-extrabold text-[11px]">{i18n.language === 'he' ? 'עברית (RTL)' : 'EN'}</span>
               </button>
 
               <ThemeToggle showLabel={false} />
@@ -174,6 +172,16 @@ export default function Navbar() {
             <div className="flex items-center gap-2 md:hidden">
               <GlobalSearch />
               <LocationSelector />
+              <button
+                onClick={() => {
+                  const nextLang = i18n.language === 'he' ? 'en' : 'he';
+                  i18n.changeLanguage(nextLang);
+                }}
+                className="p-2 rounded-xl bg-slate-800 text-amber-400 border border-slate-700 flex items-center justify-center transition-all"
+                title={i18n.language === 'he' ? 'Switch to English' : 'עבור לעברית'}
+              >
+                <Languages className="w-4 h-4" />
+              </button>
               <ThemeToggle showLabel={false} />
               
               <button

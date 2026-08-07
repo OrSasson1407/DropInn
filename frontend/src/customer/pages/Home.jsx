@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Star, MapPin, Clock, Search, ShieldCheck, Zap, Sparkles, 
   Filter, CheckCircle2, Navigation, Calendar, Heart, Award,
@@ -17,6 +18,7 @@ import {
 export { SERVICE_CATEGORIES, DEMO_PROVIDERS };
 
 export default function Home() {
+  const { t, i18n } = useTranslation();
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,26 +91,23 @@ export default function Home() {
           </div>
           
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-            Barbers, Handymen, Mechanics, Dog Groomers & Chefs, <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-orange-400 bg-clip-text text-transparent">
-              Delivered To Your Door step.
-            </span>
+            {t('home.heroTitle')}
           </h1>
 
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-2xl">
-            Book top-rated specialists across 35+ categories on-demand ("Available Now") or schedule for later. Vetted, fully equipped professionals arrive directly at your location.
+            {t('home.heroSubtitle')}
           </p>
 
           {/* Search Bar & Instant/Scheduled Filter */}
           <div className="pt-2 space-y-3">
             <div className="relative max-w-xl">
-              <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
+              <Search className="absolute left-4 rtl:left-auto rtl:right-4 top-3.5 w-5 h-5 text-slate-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search haircuts, plumbers, dog grooming, car detailing, private chef, handyman..."
-                className="w-full bg-slate-950/90 border border-slate-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/60 shadow-inner transition-all"
+                placeholder={t('common.search')}
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-2xl pl-12 pr-4 rtl:pl-4 rtl:pr-12 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/60 shadow-inner transition-all"
               />
             </div>
 

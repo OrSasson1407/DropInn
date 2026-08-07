@@ -25,6 +25,7 @@ import FleetManagementPortal from './provider/pages/FleetManagementPortal';
 import AdminApprovals from './admin/pages/ProviderApprovals';
 import ArchitectureSpecPage from './admin/pages/ArchitectureSpecPage';
 import SystemHealthStatusPage from './admin/pages/SystemHealthStatusPage';
+import AnalyticsDashboard from './admin/pages/AnalyticsDashboard';
 import LegalPage from './customer/pages/LegalPage';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 import Navbar from './shared/components/Navbar';
@@ -63,6 +64,7 @@ export default function App() {
             <Route path='/provider/fleet' element={<ProtectedRoute requiredRole="provider"><FleetManagementPortal /></ProtectedRoute>} />
             <Route path='/provider/*' element={<ProtectedRoute requiredRole="provider"><ProviderDashboard /></ProtectedRoute>} />
 
+            <Route path='/admin/analytics' element={<ProtectedRoute requiredRole="admin"><AnalyticsDashboard /></ProtectedRoute>} />
             <Route path='/admin/*' element={<ProtectedRoute requiredRole="admin"><AdminApprovals /></ProtectedRoute>} />
             <Route path='/status' element={<ProtectedRoute requiredRole="admin"><SystemHealthStatusPage /></ProtectedRoute>} />
             <Route path='/docs/architecture' element={<ProtectedRoute requiredRole="admin"><ArchitectureSpecPage /></ProtectedRoute>} />

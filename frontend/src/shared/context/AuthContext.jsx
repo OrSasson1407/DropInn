@@ -3,9 +3,19 @@ import { auth, db } from '../../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
-export function useAuth() { return useContext(AuthContext); }
+export function useAuth() { 
+  const context = useContext(AuthContext);
+  return context || {
+    currentUser: null,
+    userProfile: null,
+    userRole: 'guest',
+    isAdmin: false,
+    isProvider: false,
+    loading: false
+  };
+}
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);

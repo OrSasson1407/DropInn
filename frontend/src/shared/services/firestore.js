@@ -110,6 +110,23 @@ export const updateOrderStatus = async (orderId, newStatus, currentStatus = null
   }
 };
 
+export const updateProviderLocation = async (orderId, locationData) => {
+  const orderRef = doc(db, 'orders', orderId);
+  const locPayload = {
+    lat: Number(locationData.lat) || 32.0711,
+    lng: Number(locationData.lng) || 34.7871,
+    address: locationData.address || 'En Route Location',
+    heading: locationData.heading || 0,
+    speed: locationData.speed || '25 km/h',
+    updatedAt: new Date().toISOString()
+  };
+  await updateDoc(orderRef, {
+    providerLocation: locPayload,
+    updatedAt: serverTimestamp()
+  });
+  return locPayload;
+};
+
 export const cancelOrder = async (orderId, reason = 'Cancelled by user') => {
   const orderRef = doc(db, 'orders', orderId);
   const snap = await getDoc(orderRef);

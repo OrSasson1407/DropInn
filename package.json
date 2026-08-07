@@ -27,10 +27,15 @@
     "emulators:exec": "firebase emulators:exec \"npm test\""
   },
   "dependencies": {
+    "@google/genai": "^2.16.0",
+    "@sentry/react": "^10.69.0",
     "@stripe/stripe-js": "^9.13.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vis.gl/react-google-maps": "^1.9.0",
+    "i18next": "^26.3.6",
     "lucide-react": "^1.29.0",
+    "react-i18next": "^17.0.11",
+    "recharts": "^3.10.1",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

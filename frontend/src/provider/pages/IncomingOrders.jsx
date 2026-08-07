@@ -4,7 +4,8 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
 import { updateOrderStatus } from '../../shared/services/firestore';
-import { Bell, MapPin, Check, X, Scissors, Clock, DollarSign, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { downloadICalFile, syncWithGoogleCalendar } from '../../shared/services/calendar';
+import { Bell, MapPin, Check, X, Scissors, Clock, DollarSign, CheckCircle2, ShieldAlert, Calendar, Download } from 'lucide-react';
 
 export default function IncomingOrders() {
   const [orders, setOrders] = useState([]);
@@ -126,6 +127,33 @@ export default function IncomingOrders() {
                     >
                       <X className="w-4 h-4 stroke-[2.5]" />
                       <span>Decline</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Calendar Sync Actions */}
+                {(isApproved || isCompleted) && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={() => {
+                        syncWithGoogleCalendar(o);
+                        toast.success('Syncing with Google Calendar...', 'Calendar Sync');
+                      }}
+                      className="py-1.5 px-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px] font-bold transition-all flex items-center gap-1.5"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Sync to Google Calendar</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        downloadICalFile(o);
+                        toast.success('.ics file downloaded!', 'iCal Download');
+                      }}
+                      className="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition-all flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Export iCal (.ics)</span>
                     </button>
                   </div>
                 )}

@@ -1,7 +1,7 @@
 import { 
   Compass, Sparkles, Clock, HeartHandshake, ShoppingBag, 
   Briefcase, ShieldCheck, MapPin, Route, Users, Calendar, 
-  CreditCard, Activity, FileText, Gift, Home as HomeIcon
+  CreditCard, Activity, FileText, Gift, Home as HomeIcon, TrendingUp
 } from 'lucide-react';
 
 export const SUPPORTED_REGIONS = [
@@ -37,6 +37,7 @@ export const NAV_ITEMS = {
   ],
   admin: [
     { label: 'Approvals', path: '/admin', icon: ShieldCheck },
+    { label: 'Analytics', path: '/admin/analytics', icon: TrendingUp },
     { label: 'System Health', path: '/status', icon: Activity },
     { label: 'v2 Architecture', path: '/docs/architecture', icon: FileText }
   ]

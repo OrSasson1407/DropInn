@@ -34,7 +34,17 @@ export function canTransitionOrder(currentState, nextState) {
  * Hard-capped at 1.5x surge multiplier to preserve brand trust
  */
 export function calculateDynamicPrice(basePrice, demandFactor = 1.0, distanceKm = 0) {
-  if (basePrice <= 0) return 0;
+  if (basePrice <= 0) {
+    return {
+      basePrice: 0,
+      surgeMultiplier: 1.0,
+      travelSurcharge: 0,
+      totalPrice: 0,
+      platformCommission: 0,
+      providerEarnings: 0,
+      isSurgeApplied: false
+    };
+  }
 
   // Cap surge multiplier between 1.0x and 1.5x max
   const boundedSurge = Math.min(1.5, Math.max(1.0, demandFactor));
