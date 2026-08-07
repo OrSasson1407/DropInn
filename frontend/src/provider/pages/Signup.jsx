@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../../firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Mail, Lock, Briefcase, AlertCircle, Sparkles, Scissors, CheckCircle2, User, FileText, ShieldCheck } from 'lucide-react';
+import { SERVICE_CATEGORIES, CATEGORY_GROUPS } from '../../shared/services/categories';
 
 export default function ProviderSignup() {
   const [name, setName] = useState('');
@@ -164,12 +165,15 @@ export default function ProviderSignup() {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-all"
             >
-              <option value="Men's Haircuts & Beard">Men's Haircuts & Beard</option>
-              <option value="Manicure & Pedicure">Manicure & Pedicure</option>
-              <option value="Women's Hair & Blowout">Women's Hair & Blowout</option>
-              <option value="Professional Makeup">Professional Makeup</option>
-              <option value="Massage & Bodywork">Massage & Bodywork</option>
-              <option value="Facial & Skincare">Facial & Skincare</option>
+              {CATEGORY_GROUPS.filter(g => g.id !== 'all').map(group => (
+                <optgroup key={group.id} label={`--- ${group.label} ---`}>
+                  {SERVICE_CATEGORIES.filter(cat => cat.group === group.id).map(cat => (
+                    <option key={cat.id} value={cat.label}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
 

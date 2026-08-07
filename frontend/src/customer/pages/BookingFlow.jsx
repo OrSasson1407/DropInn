@@ -14,31 +14,7 @@ import {
   Loader2, Sparkles, Navigation, Scissors, Calendar, MessageSquare, 
   Send, AlertCircle, Sparkle, Plus, ChevronRight, Users, Zap, Shield
 } from 'lucide-react';
-
-const ADDONS_BY_CATEGORY = {
-  'haircut': [
-    { id: 'beard', name: 'Beard Trim & Razor Lineup', price: 40 },
-    { id: 'shampoo', name: 'Hot Towel & Scalp Massage', price: 30 },
-    { id: 'design', name: 'Custom Hair Tattoo / Line Design', price: 35 }
-  ],
-  'nails': [
-    { id: 'removal', name: 'Old Gel Polish Removal', price: 25 },
-    { id: 'nailart', name: 'Custom Nail Art (2 Accent Nails)', price: 45 },
-    { id: 'paraffin', name: 'Paraffin Hydration Wax Mask', price: 35 }
-  ],
-  'women_styling': [
-    { id: 'olaplex', name: 'Olaplex Deep Conditioning', price: 60 },
-    { id: 'curls', name: 'Glam Hollywood Waves Curls', price: 50 }
-  ],
-  'makeup': [
-    { id: 'lashes', name: 'Faux Mink Mink Lashes', price: 40 },
-    { id: 'airbrush', name: 'Airbrush Foundation Upgrade', price: 50 }
-  ],
-  'massage': [
-    { id: 'hotstone', name: 'Hot Basalt Stone Upgrade', price: 50 },
-    { id: 'cbd', name: 'Organic CBD Recovery Balm', price: 40 }
-  ]
-};
+import { ADDONS_BY_CATEGORY } from '../../shared/services/categories';
 
 export default function BookingFlow() {
   const { id: providerId } = useParams();

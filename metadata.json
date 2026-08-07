@@ -1,6 +1,6 @@
 {
   "name": "DropIn",
-  "description": "On-demand at-home grooming and beauty services marketplace connecting customers with verified barbers, manicurists, estheticians, and stylists",
+  "description": "On-demand home & personal service marketplace connecting customers with verified barbers, plumbers, dog groomers, mechanics, handymen, chefs, and estheticians across 35+ categories",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

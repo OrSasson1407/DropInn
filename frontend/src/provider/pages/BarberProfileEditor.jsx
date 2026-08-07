@@ -8,6 +8,7 @@ import {
   UserCheck, Scissors, DollarSign, Image as ImageIcon, Plus, Trash2, 
   Save, CheckCircle2, Loader2, Sparkles, AlertCircle, Eye, Sparkle, Heart, Flame
 } from 'lucide-react';
+import { SERVICE_CATEGORIES, CATEGORY_GROUPS } from '../../shared/services/categories';
 
 const CATEGORY_OPTIONS = [
   'Men\'s Haircuts & Beard',
@@ -215,8 +216,14 @@ export default function BarberProfileEditor() {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500"
             >
-              {CATEGORY_OPTIONS.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+              {CATEGORY_GROUPS.filter(g => g.id !== 'all').map(group => (
+                <optgroup key={group.id} label={`--- ${group.label} ---`}>
+                  {SERVICE_CATEGORIES.filter(cat => cat.group === group.id).map(cat => (
+                    <option key={cat.id} value={cat.label}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
