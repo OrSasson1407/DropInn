@@ -24,9 +24,16 @@ service cloud.firestore {
       );
     }
 
+    match /test/connection {
+      allow read: if true;
+    }
+
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create, update: if isUser(userId) || isAdmin();
+      allow create: if (isUser(userId) && (!('role' in request.resource.data) || request.resource.data.role != 'admin' || isAdmin())) || isAdmin();
+      allow update: if (
+        isUser(userId) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || request.resource.data.role == resource.data.role)
+      ) || isAdmin();
       allow delete: if isAdmin();
     }
 

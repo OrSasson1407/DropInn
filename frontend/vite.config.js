@@ -9,6 +9,12 @@ export default defineConfig({
     port: 3000,
     allowedHosts: true
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
+    include: ['src/__tests__/**/*.{test,spec}.{js,jsx,ts,tsx}']
+  },
   define: {
     'process.env': {
       GOOGLE_MAPS_PLATFORM_KEY: JSON.stringify(process.env.GOOGLE_MAPS_PLATFORM_KEY || ''),

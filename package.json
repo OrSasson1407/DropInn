@@ -10,12 +10,30 @@
     "dev": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend",
     "start": "npm run dev --workspace=frontend",
-    "lint": "npm run build --workspace=frontend"
+    "lint": "npm run build --workspace=frontend",
+    "test": "npm run test --workspace=frontend",
+    "test:unit": "npm run test:unit --workspace=frontend",
+    "test:rules": "npm run test:rules --workspace=frontend",
+    "test:a11y": "npm run test:a11y --workspace=frontend",
+    "test:e2e": "npm run test:e2e --workspace=frontend",
+    "test:coverage": "npm run test:coverage --workspace=frontend"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@vis.gl/react-google-maps": "^1.9.0",
     "lucide-react": "^1.29.0",
     "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.3",
+    "axe-core": "^4.13.0",
+    "jest-axe": "^11.0.0",
+    "jsdom": "^30.0.1",
+    "msw": "^2.15.0",
+    "vitest": "^4.1.10"
   }
 }

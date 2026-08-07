@@ -12,9 +12,24 @@ export default function ProviderSignup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [idSubmitted, setIdSubmitted] = useState(false);
+  const [docFileName, setDocFileName] = useState('');
+  const [idDocumentUrl, setIdDocumentUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDocFileName(file.name);
+      setIdSubmitted(true);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setIdDocumentUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const createProviderProfile = async (uid, providerName, userEmail) => {
     try {
@@ -27,6 +42,7 @@ export default function ProviderSignup() {
         isApproved: false,
         idVerified: false,
         idDocumentSubmitted: idSubmitted,
+        idDocumentUrl: idDocumentUrl || null,
         ownerUid: uid,
         email: userEmail,
         createdAt: serverTimestamp()
@@ -198,20 +214,25 @@ export default function ProviderSignup() {
             </div>
           </div>
 
-          <div className="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 font-semibold">
-              <input
-                type="checkbox"
-                checked={idSubmitted}
-                onChange={(e) => setIdSubmitted(e.target.checked)}
-                className="accent-amber-500 rounded w-4 h-4"
-              />
-              <span className="flex items-center gap-1.5">
+          <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span>Upload Govt ID & Professional Certification</span>
+                <span>Upload Govt ID / License Photo</span>
               </span>
-            </label>
-            <p className="text-[11px] text-slate-500 pl-6">
+              {docFileName && (
+                <span className="text-[10px] text-emerald-400 font-mono font-bold truncate max-w-[120px]">
+                  ✓ {docFileName}
+                </span>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}
+              className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500/10 file:text-amber-400 hover:file:bg-amber-500/20 cursor-pointer"
+            />
+            <p className="text-[11px] text-slate-500">
               DropIn requires identity verification & background checks for safety before approving bookings.
             </p>
           </div>

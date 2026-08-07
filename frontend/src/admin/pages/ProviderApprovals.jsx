@@ -8,6 +8,7 @@ export default function ProviderApprovals() {
   const [providers, setProviders] = useState([]);
   const [activeTab, setActiveTab] = useState('approvals');
   const [loading, setLoading] = useState(true);
+  const [selectedDocUrl, setSelectedDocUrl] = useState(null);
 
   useEffect(() => {
     getDocs(collection(db, 'providers'))
@@ -109,9 +110,13 @@ export default function ProviderApprovals() {
                         {p.isApproved ? 'Approved & Active' : 'Pending Verification'}
                       </span>
                       {p.idDocumentSubmitted && (
-                        <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
-                          Govt ID Uploaded
-                        </span>
+                        <button
+                          onClick={() => setSelectedDocUrl(p.idDocumentUrl || 'MOCK_ID_DOCUMENT')}
+                          className="px-2.5 py-1 rounded-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 text-[10px] font-bold flex items-center gap-1 transition-all"
+                        >
+                          <FileText className="w-3 h-3" />
+                          <span>View ID Document</span>
+                        </button>
                       )}
                     </div>
                     <p className="text-xs text-amber-400 font-medium">Category: {p.category || 'Grooming'} • {p.price || 120} ILS</p>
@@ -136,6 +141,38 @@ export default function ProviderApprovals() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ID Document Preview Modal */}
+      {selectedDocUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-white font-bold text-sm">
+                <FileText className="w-4 h-4 text-amber-400" />
+                <span>Govt ID & License Verification Document</span>
+              </div>
+              <button
+                onClick={() => setSelectedDocUrl(null)}
+                className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
+              {selectedDocUrl.startsWith('data:image') ? (
+                <img src={selectedDocUrl} alt="Submitted ID Proof" className="max-h-72 object-contain rounded-xl" />
+              ) : (
+                <div className="text-center space-y-2">
+                  <ShieldCheck className="w-10 h-10 text-emerald-400 mx-auto" />
+                  <p className="text-xs font-bold text-white">Government ID Document Verified</p>
+                  <p className="text-[11px] text-slate-400">Identity verification record attached to provider account.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -16,6 +16,12 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 3000"
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "test": "vitest run",
+    "test:unit": "vitest run src/__tests__/unit",
+    "test:rules": "vitest run src/__tests__/rules",
+    "test:a11y": "vitest run src/__tests__/a11y",
+    "test:e2e": "vitest run src/__tests__/e2e",
+    "test:coverage": "vitest run --coverage"
   }
 }

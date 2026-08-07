@@ -70,6 +70,10 @@ export function AuthProvider({ children }) {
 
   const updateUserRole = async (newRole) => {
     if (!currentUser) return;
+    if (!isAdmin) {
+      console.warn('Unauthorized role update attempt blocked.');
+      return;
+    }
     const userRef = doc(db, 'users', currentUser.uid);
     await setDoc(userRef, { role: newRole }, { merge: true });
     setUserProfile(prev => ({ ...prev, role: newRole }));

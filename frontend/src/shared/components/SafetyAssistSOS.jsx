@@ -36,7 +36,7 @@ export default function SafetyAssistSOS({ activeOrderId = null, locationText = '
     }
 
     toast.error(
-      'EMERGENCY ALERT BROADCASTED! Safety dispatch logged & emergency contacts notified with live GPS.',
+      'EMERGENCY INCIDENT LOGGED! Safety dispatch recorded & emergency dialer ready.',
       'SOS Active'
     );
   };
@@ -97,11 +97,11 @@ export default function SafetyAssistSOS({ activeOrderId = null, locationText = '
                 <h3 className="text-lg font-black text-white flex items-center gap-2">
                   <span>Emergency Safety Assist</span>
                   <span className="text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono">
-                    24/7 LIVE
+                    SAFETY LOG
                   </span>
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Instant protection & location broadcast during in-home visits.
+                  Instant location log & emergency call shortcuts during in-home visits.
                 </p>
               </div>
             </div>
@@ -111,9 +111,9 @@ export default function SafetyAssistSOS({ activeOrderId = null, locationText = '
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-white">SOS Alert Signal Transmitted!</p>
+                    <p className="text-xs font-bold text-white">SOS Incident Logged & Dispatched!</p>
                     <p className="text-[11px] text-rose-200 leading-relaxed">
-                      DropIn Rapid Safety Dispatch and your emergency contact list have received your live location GPS coordinates ({locationText}).
+                      DropIn Safety Console has recorded your incident details and location ({locationText}). Use the options below to contact emergency services.
                     </p>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export default function SafetyAssistSOS({ activeOrderId = null, locationText = '
                     <span>TRIGGER EMERGENCY SOS ALERT</span>
                   </button>
                   <p className="text-[10px] text-slate-500 text-center">
-                    Triggers immediate alert to DropIn Emergency Command Center & live location SMS to emergency contacts.
+                    Dispatches high-priority incident log to DropIn Safety Console and activates emergency dialer options.
                   </p>
                 </div>
 
