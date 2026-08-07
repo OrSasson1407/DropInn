@@ -41,6 +41,11 @@ export default function BarberProfileEditor() {
   const [specialties, setSpecialties] = useState([]);
   const [portfolio, setPortfolio] = useState([]);
 
+  // Provider ID Document verification state
+  const [idDocumentSubmitted, setIdDocumentSubmitted] = useState(false);
+  const [idDocumentUrl, setIdDocumentUrl] = useState('');
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
   // New photo input fields
   const [newPhotoTitle, setNewPhotoTitle] = useState('');
   const [newPhotoCategory, setNewPhotoCategory] = useState('Service Photo');
@@ -60,6 +65,8 @@ export default function BarberProfileEditor() {
           setBio(data.bio || '');
           setSpecialties(data.specialties || ['Mobile Studio', 'Sanitized Gear']);
           setPortfolio(data.portfolio || []);
+          setIdDocumentSubmitted(!!data.idDocumentSubmitted);
+          setIdDocumentUrl(data.idDocumentUrl || '');
         } else {
           setName(currentUser.displayName || 'Pro Specialist');
         }
@@ -87,7 +94,10 @@ export default function BarberProfileEditor() {
         price: Number(price) || 120,
         bio,
         specialties,
-        portfolio
+        portfolio,
+        idDocumentSubmitted,
+        idDocumentUrl,
+        verificationStatus: idDocumentSubmitted ? 'pending_review' : 'unverified'
       });
       setSavedSuccess(true);
       toast.success('Your profile & portfolio changes have been saved!', 'Profile Updated');
@@ -123,6 +133,25 @@ export default function BarberProfileEditor() {
     setPortfolio([...portfolio, newItem]);
     setNewPhotoTitle('');
     setNewPhotoUrl('');
+  };
+
+  const handleDocFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingDoc(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setIdDocumentUrl(reader.result);
+      setIdDocumentSubmitted(true);
+      setIsUploadingDoc(false);
+      toast.success('Government ID / Barber license document attached successfully!', 'Doc Uploaded');
+    };
+    reader.onerror = () => {
+      setIsUploadingDoc(false);
+      toast.error('Failed to read selected image document', 'Upload Error');
+    };
+    reader.readAsDataURL(file);
   };
 
   const removePhoto = (id) => {
@@ -249,6 +278,50 @@ export default function BarberProfileEditor() {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Government ID & License Verification Upload */}
+        <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
+                Identity & Certification Verification
+              </span>
+              <p className="text-xs text-slate-400">
+                Upload official Government ID or Barber/Beauty license photo for admin compliance review.
+              </p>
+            </div>
+            {idDocumentSubmitted ? (
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Doc Submitted</span>
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
+                Unverified
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <label className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-2">
+              <ImageIcon className="w-4 h-4" />
+              <span>{idDocumentSubmitted ? 'Replace ID / License File' : 'Upload ID / Certification Doc'}</span>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleDocFileUpload}
+                className="hidden"
+              />
+            </label>
+
+            {idDocumentUrl && (
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Verification document attached & ready for submit</span>
+              </div>
+            )}
           </div>
         </div>
 

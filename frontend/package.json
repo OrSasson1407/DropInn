@@ -19,9 +19,16 @@
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "test": "vitest run",
     "test:unit": "vitest run src/__tests__/unit",
+    "test:component": "vitest run src/__tests__/component",
     "test:rules": "vitest run src/__tests__/rules",
     "test:a11y": "vitest run src/__tests__/a11y",
-    "test:e2e": "vitest run src/__tests__/e2e",
+    "test:concurrency": "vitest run src/__tests__/concurrency",
+    "test:edge_cases": "vitest run src/__tests__/edge_cases",
+    "test:integration": "vitest run src/__tests__/integration",
+    "test:performance": "vitest run src/__tests__/performance",
+    "test:regression": "vitest run src/__tests__/regression",
+    "test:visual": "vitest run src/__tests__/visual",
+    "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage"
   }
 }

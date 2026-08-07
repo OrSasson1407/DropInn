@@ -70,7 +70,7 @@ describe('Home Page Component', () => {
     renderHome();
     
     // Click on Manicure & Pedicure category
-    const categoryButton = screen.getByText("Manicure & Pedicure");
+    const categoryButton = screen.getAllByText("Manicure & Pedicure")[0];
     fireEvent.click(categoryButton);
 
     await waitFor(() => {
