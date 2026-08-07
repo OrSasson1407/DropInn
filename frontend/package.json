@@ -29,6 +29,7 @@
     "test:regression": "vitest run src/__tests__/regression",
     "test:visual": "vitest run src/__tests__/visual",
     "test:e2e": "playwright test",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "emulators:exec": "firebase emulators:exec \"npm test\""
   }
 }

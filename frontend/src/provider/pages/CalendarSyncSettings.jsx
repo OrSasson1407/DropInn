@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, RefreshCw, CheckCircle2, ShieldCheck, Link2, ExternalLink, Copy } from 'lucide-react';
 import { useToast } from '../../shared/context/ToastContext';
+import PageHeaderBar from '../../shared/components/PageHeaderBar';
 
 export default function CalendarSyncSettings() {
   const { toast } = useToast();
@@ -33,7 +34,17 @@ export default function CalendarSyncSettings() {
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <PageHeaderBar
+        title="Calendar & Schedule Sync"
+        subtitle="Sync external calendars (Google, Outlook, iCal) to automatically prevent double-booking"
+        category="Provider Tools"
+        breadcrumbs={[
+          { label: 'Provider Portal', path: '/provider' },
+          { label: 'Calendar Sync' }
+        ]}
+      />
+
       {/* Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-2">
         <div className="flex items-center gap-2 text-amber-400">

@@ -23,7 +23,8 @@
     "test:regression": "npm run test:regression --workspace=frontend",
     "test:visual": "npm run test:visual --workspace=frontend",
     "test:e2e": "npm run test:e2e --workspace=frontend",
-    "test:coverage": "npm run test:coverage --workspace=frontend"
+    "test:coverage": "npm run test:coverage --workspace=frontend",
+    "emulators:exec": "firebase emulators:exec \"npm test\""
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.13.0",

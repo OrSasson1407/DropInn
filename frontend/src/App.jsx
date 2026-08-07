@@ -25,6 +25,7 @@ import FleetManagementPortal from './provider/pages/FleetManagementPortal';
 import AdminApprovals from './admin/pages/ProviderApprovals';
 import ArchitectureSpecPage from './admin/pages/ArchitectureSpecPage';
 import SystemHealthStatusPage from './admin/pages/SystemHealthStatusPage';
+import LegalPage from './customer/pages/LegalPage';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 import Navbar from './shared/components/Navbar';
 
@@ -33,7 +34,7 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 antialiased bg-texture-grain">
         <Navbar />
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
             <Route path='/' element={<Home />} />
             <Route path='/customer/login' element={<CustomerLogin />} />
@@ -46,6 +47,11 @@ export default function App() {
             <Route path='/customer/addresses' element={<ProtectedRoute><AddressBookManager /></ProtectedRoute>} />
             <Route path='/customer/vouchers' element={<GiftVouchersPage />} />
             <Route path='/customer/rewards' element={<ReferralLoyaltyHub />} />
+
+            <Route path='/legal' element={<LegalPage />} />
+            <Route path='/terms' element={<LegalPage />} />
+            <Route path='/privacy' element={<LegalPage />} />
+            <Route path='/cancellation-policy' element={<LegalPage />} />
 
             <Route path='/provider/login' element={<ProviderLogin />} />
             <Route path='/provider/signup' element={<ProviderSignup />} />
@@ -67,7 +73,10 @@ export default function App() {
             <div className="flex items-center gap-2">
               <span className="font-heading font-bold text-[var(--text-primary)]">DropInn Marketplace</span> — At-Home Grooming & Barbering ("Accessible Premium Lifestyle")
             </div>
-            <div className="flex items-center gap-4 text-[var(--text-secondary)] font-medium">
+            <div className="flex items-center gap-4 text-[var(--text-secondary)] font-medium flex-wrap">
+              <a href="/legal?doc=terms" className="hover:text-amber-500 text-[11px]">Terms of Service</a>
+              <a href="/legal?doc=privacy" className="hover:text-amber-500 text-[11px]">Privacy Policy</a>
+              <a href="/legal?doc=cancellation" className="hover:text-amber-500 text-[11px]">Cancellation Policy</a>
               <a href="/status" className="hover:text-amber-500 font-mono text-[11px] flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 System Health (#50)

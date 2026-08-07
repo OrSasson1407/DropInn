@@ -9,6 +9,7 @@ import { db } from '../../firebase';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import SafetyAssistSOS from '../../shared/components/SafetyAssistSOS';
 import ServiceCoverageMap from '../../shared/components/ServiceCoverageMap';
+import PageHeaderBar from '../../shared/components/PageHeaderBar';
 import { 
   MapPin, CreditCard, ShieldCheck, Clock, Star, CheckCircle, ArrowRight, 
   Loader2, Sparkles, Navigation, Scissors, Calendar, MessageSquare, 
@@ -311,7 +312,20 @@ export default function BookingFlow() {
   const availableAddons = ADDONS_BY_CATEGORY['haircut'];
 
   return (
-    <div className="max-w-2xl mx-auto py-4 space-y-6">
+    <div className="max-w-3xl mx-auto py-2 space-y-6">
+      <PageHeaderBar
+        title={`Book ${provider?.name || 'Pro Specialist'}`}
+        subtitle={provider?.category || 'Grooming & Beauty Service'}
+        breadcrumbs={[
+          { label: 'Explore Pros', path: '/' },
+          { label: provider?.name || 'Specialist', path: `/customer/provider/${providerId}` },
+          { label: 'Checkout' }
+        ]}
+        stepCurrent={orderId ? 4 : 3}
+        stepTotal={4}
+        stepTitle={orderId ? 'Live Tracking' : 'Confirm & Pay'}
+      />
+
       {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-800 pb-5">
@@ -492,6 +506,10 @@ export default function BookingFlow() {
               <span>Total Price</span>
               <span className="text-amber-400 font-extrabold text-base">{totalPrice} ILS</span>
             </div>
+            <p className="text-[10px] text-slate-500 pt-1 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>Free cancellation up to 30 mins before dispatch. 25 ILS late cancellation fee applies thereafter to compensate provider travel time.</span>
+            </p>
           </div>
 
           {/* Submit Action Button */}
