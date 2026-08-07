@@ -84,15 +84,15 @@ export default function DropInLogo({ size = 'md', showLabel = true, className = 
       {showLabel && (
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-1.5">
-            <span className={`font-black ${currentSize.text} tracking-tight bg-gradient-to-r from-white via-slate-100 to-amber-200 bg-clip-text text-transparent`}>
-              DropIn
+            <span className={`font-heading font-black ${currentSize.text} tracking-tight bg-gradient-to-r from-amber-500 via-amber-400 to-amber-200 bg-clip-text text-transparent`}>
+              DropInn
             </span>
-            <span className={`font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 ${currentSize.badge}`}>
-              v3.0
+            <span className={`font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 ${currentSize.badge}`}>
+              STUDIO
             </span>
           </div>
-          <span className="text-[10px] text-amber-400 font-extrabold tracking-wider uppercase -mt-0.5">
-            Mobile Grooming & Beauty
+          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-extrabold tracking-wider uppercase -mt-0.5">
+            At-Home Barber & Grooming
           </span>
         </div>
       )}

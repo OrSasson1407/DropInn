@@ -31,7 +31,7 @@ import Navbar from './shared/components/Navbar';
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 antialiased">
+      <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 antialiased bg-texture-grain">
         <Navbar />
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
@@ -62,18 +62,18 @@ export default function App() {
             <Route path='/docs/architecture' element={<ArchitectureSpecPage />} />
           </Routes>
         </main>
-        <footer className="border-t border-slate-900 bg-slate-950/80 py-8 text-center text-xs text-slate-500">
+        <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] py-8 text-center text-xs text-[var(--text-muted)]">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-300">DropIn v3.0 Enterprise</span> — At-Home Grooming & Beauty Marketplace ("Wolt for Barbers")
+              <span className="font-heading font-bold text-[var(--text-primary)]">DropInn Marketplace</span> — At-Home Grooming & Barbering ("Accessible Premium Lifestyle")
             </div>
-            <div className="flex items-center gap-4 text-slate-400 font-medium">
-              <a href="/status" className="hover:text-amber-400 font-mono text-[11px] flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+            <div className="flex items-center gap-4 text-[var(--text-secondary)] font-medium">
+              <a href="/status" className="hover:text-amber-500 font-mono text-[11px] flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 System Health (#50)
               </a>
-              <a href="/docs/architecture" className="hover:text-amber-400 text-[11px]">
-                V3.0 PRD Architecture Spec
+              <a href="/docs/architecture" className="hover:text-amber-500 text-[11px]">
+                Architecture Spec
               </a>
             </div>
           </div>

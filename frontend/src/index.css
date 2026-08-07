@@ -1,104 +1,166 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --font-heading: 'Outfit', 'Playfair Display', sans-serif;
-    --font-body: 'Plus Jakarta Sans', sans-serif;
-  }
+:root {
+  --font-heading: 'Fraunces', serif;
+  --font-body: 'Instrument Sans', sans-serif;
+  
+  /* Light Mode Design System Tokens (Warm Ivory & Accessible Amber Gold) */
+  --bg-canvas: #FBF9F5;
+  --bg-surface: #FFFFFF;
+  --bg-surface-muted: #F3EFE6;
+  --bg-surface-elevated: #FFFFFF;
+  --border-subtle: #E8E2D5;
+  --border-medium: #D6CEBE;
+  
+  --text-primary: #1A1613;
+  --text-secondary: #4A443F;
+  --text-muted: #786F68;
+  
+  --accent-amber: #D97706;
+  --accent-amber-hover: #B45309;
+  --accent-amber-subtle: rgba(217, 119, 6, 0.12);
+  --accent-terracotta: #C2410C;
+  --accent-sage: #5B6349;
 
+  --shadow-warm-sm: 0 2px 8px -2px rgba(26, 22, 19, 0.05);
+  --shadow-warm-md: 0 10px 25px -8px rgba(120, 53, 15, 0.08), 0 4px 10px -2px rgba(26, 22, 19, 0.03);
+  --shadow-warm-lg: 0 20px 40px -12px rgba(120, 53, 15, 0.12), 0 6px 16px -4px rgba(26, 22, 19, 0.04);
+
+  /* Semantic Colors - Harmonized Warm Palette */
+  --semantic-success: #059669;
+  --semantic-success-bg: rgba(5, 150, 105, 0.1);
+  --semantic-warning: #D97706;
+  --semantic-warning-bg: rgba(217, 119, 6, 0.1);
+  --semantic-error: #DC2626;
+  --semantic-error-bg: rgba(220, 38, 38, 0.1);
+  --semantic-info: #0284C7;
+  --semantic-info-bg: rgba(2, 132, 199, 0.1);
+
+  /* Radii Scale */
+  --radius-button: 14px;
+  --radius-pill: 9999px;
+  --radius-card: 20px;
+  --radius-input: 12px;
+  --radius-badge: 8px;
+}
+
+.dark {
+  /* Dark Mode Design System Tokens (Obsidian Charcoal & Sunlit Amber) */
+  --bg-canvas: #100E0C;
+  --bg-surface: #1B1714;
+  --bg-surface-muted: #24201C;
+  --bg-surface-elevated: #28231F;
+  --border-subtle: #332D27;
+  --border-medium: #453D35;
+
+  --text-primary: #F9F6F0;
+  --text-secondary: #D4CDC5;
+  --text-muted: #9E948C;
+
+  --accent-amber: #F59E0B;
+  --accent-amber-hover: #FBBF24;
+  --accent-amber-subtle: rgba(245, 158, 11, 0.15);
+  --accent-terracotta: #EA580C;
+  --accent-sage: #788360;
+
+  --shadow-warm-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+  --shadow-warm-md: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 4px 10px -2px rgba(0, 0, 0, 0.3);
+  --shadow-warm-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 6px 16px -4px rgba(0, 0, 0, 0.5);
+
+  --semantic-success: #10B981;
+  --semantic-success-bg: rgba(16, 185, 129, 0.15);
+  --semantic-warning: #F59E0B;
+  --semantic-warning-bg: rgba(245, 158, 11, 0.15);
+  --semantic-error: #EF4444;
+  --semantic-error-bg: rgba(239, 68, 68, 0.15);
+  --semantic-info: #38BDF8;
+  --semantic-info-bg: rgba(56, 189, 248, 0.15);
+}
+
+@layer base {
   body {
-    background-color: #faf8f5;
-    color: #1c1917;
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.01em;
+    min-height: 100vh;
   }
 
-  h1, h2, h3, .font-serif-heading {
+  h1, h2, h3, .font-heading {
     font-family: var(--font-heading);
+    font-variation-settings: 'opsz' 36;
     letter-spacing: -0.02em;
   }
 }
 
-/* Warm Luxury Theme Overrides (Replaces mechanical dark slate with warm organic stone & cream) */
-.bg-slate-950 {
-  background-color: #faf8f5 !important;
+/* Tactile Grain Noise Overlay Utility */
+.bg-texture-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
 }
 
-.bg-slate-900 {
-  background-color: #ffffff !important;
+/* Custom Design System Class Overrides for Theme Adaptability */
+.dark .bg-slate-950 {
+  background-color: var(--bg-canvas) !important;
 }
 
-.bg-slate-900\/95, .bg-slate-900\/90, .bg-slate-900\/80 {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+.dark .bg-slate-900 {
+  background-color: var(--bg-surface) !important;
 }
 
-.bg-slate-800, .bg-slate-800\/80, .bg-slate-800\/50 {
-  background-color: #f5f3ef !important;
+.dark .bg-slate-800 {
+  background-color: var(--bg-surface-muted) !important;
 }
 
-.border-slate-800, .border-slate-800\/80, .border-slate-700 {
-  border-color: #e7e5e4 !important;
+.dark .border-slate-800 {
+  border-color: var(--border-subtle) !important;
 }
 
-.text-white {
-  color: #1c1917 !important;
+.dark .text-white {
+  color: var(--text-primary) !important;
 }
 
-.text-slate-100, .text-slate-200 {
-  color: #292524 !important;
+.dark .text-slate-400 {
+  color: var(--text-muted) !important;
 }
 
-.text-slate-300 {
-  color: #44403c !important;
+.light .bg-slate-950 {
+  background-color: var(--bg-canvas) !important;
 }
 
-.text-slate-400 {
-  color: #78716c !important;
+.light .bg-slate-900 {
+  background-color: var(--bg-surface) !important;
 }
 
-.text-slate-500 {
-  color: #a8a29e !important;
+.light .bg-slate-800 {
+  background-color: var(--bg-surface-muted) !important;
 }
 
-.text-amber-400 {
-  color: #b45309 !important;
+.light .border-slate-800 {
+  border-color: var(--border-subtle) !important;
 }
 
-.bg-amber-500 {
-  background-color: #d97706 !important;
-  color: #ffffff !important;
+.light .text-white {
+  color: var(--text-primary) !important;
 }
 
-.bg-amber-500\/10 {
-  background-color: rgba(217, 119, 6, 0.08) !important;
-}
-
-.bg-amber-500\/20 {
-  background-color: rgba(217, 119, 6, 0.15) !important;
-}
-
-.border-amber-500, .border-amber-500\/40, .border-amber-500\/30 {
-  border-color: rgba(217, 119, 6, 0.3) !important;
-}
-
-.shadow-xl, .shadow-2xl {
-  box-shadow: 0 12px 32px -8px rgba(28, 25, 23, 0.05), 0 4px 12px -2px rgba(28, 25, 23, 0.03) !important;
+.light .text-slate-400 {
+  color: var(--text-muted) !important;
 }
 
 input, select, textarea {
-  background-color: #ffffff !important;
-  border-color: #e7e5e4 !important;
-  color: #1c1917 !important;
-  border-radius: 0.85rem !important;
+  background-color: var(--bg-surface) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-input) !important;
   font-family: var(--font-body) !important;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #d97706 !important;
+  border-color: var(--accent-amber) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12) !important;
+  box-shadow: 0 0 0 3px var(--accent-amber-subtle) !important;
 }
 
 button {
