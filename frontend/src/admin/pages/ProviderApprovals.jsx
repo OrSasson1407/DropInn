@@ -17,8 +17,8 @@ export default function ProviderApprovals() {
 
   const approve = async (id) => {
     try {
-      await updateDoc(doc(db, 'providers', id), { isApproved: true });
-      setProviders(providers.map((p) => (p.id === id ? { ...p, isApproved: true } : p)));
+      await updateDoc(doc(db, 'providers', id), { isApproved: true, idVerified: true });
+      setProviders(providers.map((p) => (p.id === id ? { ...p, isApproved: true, idVerified: true } : p)));
     } catch (e) {
       console.error(e);
       alert(e.message);
@@ -97,7 +97,7 @@ export default function ProviderApprovals() {
                   className="bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
                 >
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-white text-sm">{p.name || `Barber #${p.id.substring(0, 8)}`}</span>
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -106,9 +106,15 @@ export default function ProviderApprovals() {
                             : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                         }`}
                       >
-                        {p.isApproved ? 'Approved' : 'Pending Verification'}
+                        {p.isApproved ? 'Approved & Active' : 'Pending Verification'}
                       </span>
+                      {p.idDocumentSubmitted && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
+                          Govt ID Uploaded
+                        </span>
+                      )}
                     </div>
+                    <p className="text-xs text-amber-400 font-medium">Category: {p.category || 'Grooming'} • {p.price || 120} ILS</p>
                     <p className="text-xs font-mono text-slate-500">UID: {p.id}</p>
                   </div>
 

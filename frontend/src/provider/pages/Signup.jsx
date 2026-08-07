@@ -1,21 +1,50 @@
 import React, { useState } from 'react';
 import { signup, loginWithGoogle } from '../../shared/services/auth';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Briefcase, AlertCircle, Sparkles, Scissors, CheckCircle2 } from 'lucide-react';
+import { db } from '../../firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Mail, Lock, Briefcase, AlertCircle, Sparkles, Scissors, CheckCircle2, User, FileText, ShieldCheck } from 'lucide-react';
 
 export default function ProviderSignup() {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState("Men's Haircuts & Beard");
+  const [price, setPrice] = useState(120);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [idSubmitted, setIdSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+
+  const createProviderProfile = async (uid, providerName, userEmail) => {
+    try {
+      await setDoc(doc(db, 'providers', uid), {
+        name: providerName || 'New Professional Barber',
+        category,
+        price: Number(price) || 120,
+        rating: 5.0,
+        reviewsCount: 0,
+        isApproved: false,
+        idVerified: false,
+        idDocumentSubmitted: idSubmitted,
+        ownerUid: uid,
+        email: userEmail,
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.warn('Could not create provider profile document:', err);
+    }
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await signup(email, password);
+      const userCredential = await signup(email, password);
+      if (userCredential?.user) {
+        await createProviderProfile(userCredential.user.uid, name, email);
+      }
       nav('/provider');
     } catch (err) {
       setError(err.message || 'Signup failed');
@@ -28,7 +57,10 @@ export default function ProviderSignup() {
     setError('');
     setLoading(true);
     try {
-      await loginWithGoogle();
+      const res = await loginWithGoogle();
+      if (res?.user) {
+        await createProviderProfile(res.user.uid, res.user.displayName, res.user.email);
+      }
       nav('/provider');
     } catch (err) {
       setError(err.message || 'Google sign-in failed');
@@ -95,6 +127,48 @@ export default function ProviderSignup() {
 
         <form className="space-y-4" onSubmit={handleSignup}>
           <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Full Professional Name</label>
+            <div className="relative">
+              <User className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
+              <input
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all"
+                type="text"
+                placeholder="e.g. Avi Cohen (Master Barber)"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Specialty Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-all"
+            >
+              <option value="Men's Haircuts & Beard">Men's Haircuts & Beard</option>
+              <option value="Manicure & Pedicure">Manicure & Pedicure</option>
+              <option value="Women's Hair & Blowout">Women's Hair & Blowout</option>
+              <option value="Professional Makeup">Professional Makeup</option>
+              <option value="Massage & Bodywork">Massage & Bodywork</option>
+              <option value="Facial & Skincare">Facial & Skincare</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Standard Rate (ILS)</label>
+            <input
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-all"
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Email Address</label>
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
@@ -122,6 +196,24 @@ export default function ProviderSignup() {
                 required
               />
             </div>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 font-semibold">
+              <input
+                type="checkbox"
+                checked={idSubmitted}
+                onChange={(e) => setIdSubmitted(e.target.checked)}
+                className="accent-amber-500 rounded w-4 h-4"
+              />
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                <span>Upload Govt ID & Professional Certification</span>
+              </span>
+            </label>
+            <p className="text-[11px] text-slate-500 pl-6">
+              DropIn requires identity verification & background checks for safety before approving bookings.
+            </p>
           </div>
 
           <button

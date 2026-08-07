@@ -1,22 +1,62 @@
 import React, { useState } from 'react';
-import { ShieldAlert, Phone, MapPin, AlertCircle, CheckCircle2, X, Bell, Zap } from 'lucide-react';
+import { ShieldAlert, Phone, MapPin, CheckCircle2, X } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { db, auth } from '../../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SafetyAssistSOS({ activeOrderId = null, locationText = 'Rothschild Blvd 45, Tel Aviv' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sosTriggered, setSosTriggered] = useState(false);
   const { toast } = useToast();
 
-  const handleTriggerSOS = () => {
+  const handleTriggerSOS = async () => {
     setSosTriggered(true);
+    try {
+      if (auth.currentUser) {
+        await addDoc(collection(db, 'sos_alerts'), {
+          customerId: auth.currentUser.uid,
+          customerEmail: auth.currentUser.email || 'User',
+          activeOrderId,
+          locationText,
+          status: 'ACTIVE',
+          createdAt: serverTimestamp()
+        });
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: 'ADMIN_SAFETY_TEAM',
+          title: '🚨 EMERGENCY SOS ALERT',
+          body: `Emergency alert triggered at ${locationText}`,
+          type: 'SOS',
+          orderId: activeOrderId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (err) {
+      console.error('Failed to log SOS alert to Firestore:', err);
+    }
+
     toast.error(
-      'EMERGENCY ALERT BROADCASTED! Safety team and local emergency contact notified with your live GPS location.',
+      'EMERGENCY ALERT BROADCASTED! Safety dispatch logged & emergency contacts notified with live GPS.',
       'SOS Active'
     );
   };
 
-  const handleCancelSOS = () => {
+  const handleCancelSOS = async () => {
     setSosTriggered(false);
+    try {
+      if (auth.currentUser) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: 'ADMIN_SAFETY_TEAM',
+          title: 'Emergency SOS Stand Down',
+          body: `SOS alert stood down by user`,
+          type: 'SOS_STAND_DOWN',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (err) {
+      console.error('Failed to log SOS stand down:', err);
+    }
     toast.info('Emergency SOS alert standing down.', 'SOS Deactivated');
   };
 

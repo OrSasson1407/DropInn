@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
+import { updateOrderStatus } from '../../shared/services/firestore';
 import { Bell, MapPin, Check, X, Scissors, Clock, DollarSign, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export default function IncomingOrders() {
@@ -15,14 +16,18 @@ export default function IncomingOrders() {
     const q = query(collection(db, 'orders'), where('providerId', '==', currentUser.uid));
     return onSnapshot(
       q,
-      (snap) => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      (snap) => {
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        items.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        setOrders(items);
+      },
       (error) => console.warn('Incoming orders snapshot warning:', error)
     );
   }, [currentUser]);
 
   const updateStatus = async (id, status) => {
     try {
-      await updateDoc(doc(db, 'orders', id), { status });
+      await updateOrderStatus(id, status);
       if (status === 'approved') {
         toast.success('Order accepted! Customer notified that you are en route.', 'Order Approved');
       } else if (status === 'completed') {

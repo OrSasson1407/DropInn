@@ -3,12 +3,13 @@ import { db } from '../../firebase';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
-import { submitOrderReview } from '../../shared/services/firestore';
+import { submitOrderReview, cancelOrder } from '../../shared/services/firestore';
 import { getGoogleMapsNavigationUrl } from '../../shared/services/maps';
+import ServiceCoverageMap from '../../shared/components/ServiceCoverageMap';
 import { 
   Clock, MapPin, Scissors, CheckCircle2, Loader2, Star, 
   Sparkles, ShieldCheck, Navigation, ExternalLink, Calendar,
-  ChevronRight, AlertCircle, RefreshCw, Sparkle
+  ChevronRight, AlertCircle, RefreshCw, XCircle, Map
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -18,11 +19,13 @@ export default function CustomerOrders() {
   const [orders, setOrders] = useState([]);
   const [providersMap, setProvidersMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [showMapOrderId, setShowMapOrderId] = useState(null);
   
   // Review form state per order
   const [ratingMap, setRatingMap] = useState({});
   const [commentMap, setCommentMap] = useState({});
   const [submittingReviewId, setSubmittingReviewId] = useState(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -35,11 +38,9 @@ export default function CustomerOrders() {
       q,
       async (snap) => {
         const orderList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Sort newest first
         orderList.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
         setOrders(orderList);
 
-        // Fetch provider metadata for each unique providerId
         const pIds = [...new Set(orderList.map(o => o.providerId))];
         const pMap = {};
         for (const pId of pIds) {
@@ -66,13 +67,26 @@ export default function CustomerOrders() {
     return () => unsubscribe();
   }, [currentUser]);
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this booking request?')) return;
+    setCancellingOrderId(orderId);
+    try {
+      await cancelOrder(orderId, 'Cancelled by customer');
+      toast.info('Booking request cancelled successfully.', 'Order Cancelled');
+    } catch (err) {
+      toast.error(err.message || 'Failed to cancel order', 'Cancellation Error');
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
   const handleReviewSubmit = async (orderId, providerId) => {
     const rating = ratingMap[orderId] || 5;
     const comment = commentMap[orderId] || 'Incredible service, punctual and super clean!';
     
     setSubmittingReviewId(orderId);
     try {
-      await submitOrderReview(orderId, providerId, rating, comment, currentUser?.displayName || 'Verified Customer');
+      await submitOrderReview(orderId, providerId, rating, comment, currentUser?.uid, currentUser?.displayName || 'Verified Customer');
       toast.success('Your rating and review have been published successfully!', 'Review Published');
     } catch (err) {
       toast.error(err.message || 'Failed to submit review', 'Review Error');
@@ -252,9 +266,18 @@ export default function CustomerOrders() {
                   )}
 
                   {isApproved && (
-                    <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-amber-300 flex items-center gap-2.5">
-                      <Navigation className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
-                      <span>Provider {providerName} has accepted your order and is en route. Expected arrival in <strong>15-20 minutes</strong>.</span>
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-amber-300 flex items-center justify-between gap-2.5 flex-wrap">
+                      <div className="flex items-center gap-2.5">
+                        <Navigation className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
+                        <span>Provider {providerName} has accepted your order and is en route. Expected arrival in <strong>15-20 minutes</strong>.</span>
+                      </div>
+                      <button
+                        onClick={() => setShowMapOrderId(showMapOrderId === order.id ? null : order.id)}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-1 shrink-0"
+                      >
+                        <Map className="w-3.5 h-3.5" />
+                        <span>{showMapOrderId === order.id ? 'Hide Live Map' : 'View Live Tracking Map'}</span>
+                      </button>
                     </div>
                   )}
 
@@ -265,6 +288,31 @@ export default function CustomerOrders() {
                     </div>
                   )}
                 </div>
+
+                {/* Live Dispatch Tracking Map Container */}
+                {showMapOrderId === order.id && (
+                  <div className="pt-2">
+                    <ServiceCoverageMap selectedAddress={order.address} />
+                  </div>
+                )}
+
+                {/* Cancellation Action Bar for active orders */}
+                {(isPending || isApproved) && (
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={() => handleCancelOrder(order.id)}
+                      disabled={cancellingOrderId === order.id}
+                      className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs transition-all flex items-center gap-1.5"
+                    >
+                      {cancellingOrderId === order.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5" />
+                      )}
+                      <span>Cancel Booking Request</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Review Submission Form if completed */}
                 {isCompleted && !order.rating && (

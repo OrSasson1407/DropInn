@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { logout } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
 import DropInLogo from './DropInLogo';
+import NotificationBell from './NotificationBell';
 import { 
   Scissors, User, ShieldCheck, LogOut, Menu, X, Compass, 
   Briefcase, ChevronRight, Clock, MapPin, Sparkles, ShoppingBag,
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -110,17 +111,19 @@ export default function Navbar() {
               <span>Provider Tools</span>
             </Link>
 
-            <Link
-              to="/docs/architecture"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                isActive('/docs/architecture')
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>v2 Docs</span>
-            </Link>
+            {isAdmin && (
+              <Link
+                to="/docs/architecture"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  isActive('/docs/architecture')
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>v2 Docs</span>
+              </Link>
+            )}
           </nav>
 
           {/* Location & Auth Actions */}
@@ -130,6 +133,7 @@ export default function Navbar() {
               <span>Israel (All Regions)</span>
             </div>
 
+            <NotificationBell />
             <ThemeToggle showLabel={false} />
 
             {currentUser ? (

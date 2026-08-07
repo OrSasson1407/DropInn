@@ -38,28 +38,28 @@ export default function App() {
             <Route path='/' element={<Home />} />
             <Route path='/customer/login' element={<CustomerLogin />} />
             <Route path='/customer/signup' element={<CustomerSignup />} />
-            <Route path='/customer/orders' element={<CustomerOrders />} />
+            <Route path='/customer/orders' element={<ProtectedRoute><CustomerOrders /></ProtectedRoute>} />
             <Route path='/customer/provider/:id' element={<ProviderDetails />} />
-            <Route path='/customer/book/:id' element={<BookingFlow />} />
+            <Route path='/customer/book/:id' element={<ProtectedRoute><BookingFlow /></ProtectedRoute>} />
             <Route path='/customer/style-feed' element={<StyleInspirationFeed />} />
-            <Route path='/customer/subscriptions' element={<SubscriptionsManager />} />
-            <Route path='/customer/addresses' element={<AddressBookManager />} />
+            <Route path='/customer/subscriptions' element={<ProtectedRoute><SubscriptionsManager /></ProtectedRoute>} />
+            <Route path='/customer/addresses' element={<ProtectedRoute><AddressBookManager /></ProtectedRoute>} />
             <Route path='/customer/vouchers' element={<GiftVouchersPage />} />
             <Route path='/customer/rewards' element={<ReferralLoyaltyHub />} />
 
             <Route path='/provider/login' element={<ProviderLogin />} />
             <Route path='/provider/signup' element={<ProviderSignup />} />
-            <Route path='/provider/coverage-zone' element={<CoverageZoneDrawer />} />
-            <Route path='/provider/route-optimizer' element={<SmartRouteOptimizer />} />
-            <Route path='/provider/client-crm' element={<ClientCRMNotes />} />
-            <Route path='/provider/calendar-sync' element={<CalendarSyncSettings />} />
-            <Route path='/provider/payouts' element={<InstantPayoutsDashboard />} />
-            <Route path='/provider/fleet' element={<FleetManagementPortal />} />
-            <Route path='/provider/*' element={<ProtectedRoute><ProviderDashboard /></ProtectedRoute>} />
+            <Route path='/provider/coverage-zone' element={<ProtectedRoute requiredRole="provider"><CoverageZoneDrawer /></ProtectedRoute>} />
+            <Route path='/provider/route-optimizer' element={<ProtectedRoute requiredRole="provider"><SmartRouteOptimizer /></ProtectedRoute>} />
+            <Route path='/provider/client-crm' element={<ProtectedRoute requiredRole="provider"><ClientCRMNotes /></ProtectedRoute>} />
+            <Route path='/provider/calendar-sync' element={<ProtectedRoute requiredRole="provider"><CalendarSyncSettings /></ProtectedRoute>} />
+            <Route path='/provider/payouts' element={<ProtectedRoute requiredRole="provider"><InstantPayoutsDashboard /></ProtectedRoute>} />
+            <Route path='/provider/fleet' element={<ProtectedRoute requiredRole="provider"><FleetManagementPortal /></ProtectedRoute>} />
+            <Route path='/provider/*' element={<ProtectedRoute requiredRole="provider"><ProviderDashboard /></ProtectedRoute>} />
 
-            <Route path='/admin/*' element={<ProtectedRoute><AdminApprovals /></ProtectedRoute>} />
-            <Route path='/status' element={<SystemHealthStatusPage />} />
-            <Route path='/docs/architecture' element={<ArchitectureSpecPage />} />
+            <Route path='/admin/*' element={<ProtectedRoute requiredRole="admin"><AdminApprovals /></ProtectedRoute>} />
+            <Route path='/status' element={<ProtectedRoute requiredRole="admin"><SystemHealthStatusPage /></ProtectedRoute>} />
+            <Route path='/docs/architecture' element={<ProtectedRoute requiredRole="admin"><ArchitectureSpecPage /></ProtectedRoute>} />
           </Routes>
         </main>
         <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] py-8 text-center text-xs text-[var(--text-muted)]">
