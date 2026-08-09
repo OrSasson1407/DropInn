@@ -1,0 +1,101 @@
+// DropIn v4 Schema - Relational Data for Fintech, B2B, and Dispatch
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Users & Customers ---
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      String   // 'CUSTOMER', 'PROVIDER', 'ADMIN'
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+// --- B2B Corporate Portals ---
+model CorporateAccount {
+  id        String   @id @default(uuid())
+  name      String
+  credits   Decimal  @default(0)
+  createdAt DateTime @default(now())
+  employees Employee[]
+}
+
+model Employee {
+  id                String           @id @default(uuid())
+  email             String           @unique
+  corporateAccountId String
+  corporateAccount  CorporateAccount @relation(fields: [corporateAccountId], references: [id])
+}
+
+// --- Provider Teams & Dispatch ---
+model ProviderTeam {
+  id        String   @id @default(uuid())
+  name      String
+  members   Provider[]
+  bookings  Order[]
+}
+
+model Provider {
+  id        String        @id @default(uuid())
+  name      String
+  teamId    String?
+  team      ProviderTeam? @relation(fields: [teamId], references: [id])
+  wallet    Wallet?
+  dispatches Dispatch[]
+}
+
+model Order {
+  id             String       @id @default(uuid())
+  customerId     String
+  customer       User         @relation(fields: [customerId], references: [id])
+  status         String       // 'PENDING', 'ASSIGNED', 'COMPLETED', 'CANCELLED'
+  scheduledAt    DateTime
+  providerTeamId String?
+  providerTeam   ProviderTeam? @relation(fields: [providerTeamId], references: [id])
+  dispatch       Dispatch?
+}
+
+model Dispatch {
+  id          String    @id @default(uuid())
+  status      String    // 'PENDING', 'IN_TRANSIT', 'COMPLETED'
+  providerId  String
+  provider    Provider  @relation(fields: [providerId], references: [id])
+  orderId     String    @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  location    Location? @relation(fields: [locationId], references: [id])
+  locationId  String?
+  updatedAt   DateTime  @updatedAt
+}
+
+model Location {
+  id        String     @id @default(uuid())
+  lat       Decimal
+  lng       Decimal
+  updatedAt DateTime   @updatedAt
+  dispatches Dispatch[]
+}
+
+// --- Fintech (Wallet/Ledgers) ---
+model Wallet {
+  id           String        @id @default(uuid())
+  balance      Decimal       @default(0)
+  providerId   String        @unique
+  provider     Provider      @relation(fields: [providerId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  amount    Decimal
+  type      String   // 'CREDIT' | 'DEBIT'
+  walletId  String
+  wallet    Wallet   @relation(fields: [walletId], references: [id])
+  createdAt DateTime @default(now())
+  description String?
+}
