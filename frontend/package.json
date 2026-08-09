@@ -12,14 +12,15 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
+    "firebase-admin": "^11.11.1",
     "jsdom": "^30.0.1",
     "vite": "^5.1.4",
     "vitest": "^4.1.10"
   },
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 3000",
+    "dev": "vite --host 0.0.0.0 --port 6768",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "preview": "vite preview --host 0.0.0.0 --port 6768",
     "test": "vitest run",
     "test:unit": "vitest run src/__tests__/unit",
     "test:component": "vitest run src/__tests__/component",

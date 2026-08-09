@@ -12,7 +12,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:6768',
     trace: 'on-first-retry',
     headless: true
   },
@@ -24,7 +24,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    port: 3000,
+    port: 6768,
     reuseExistingServer: !process.env.CI,
     timeout: 60000
   }
