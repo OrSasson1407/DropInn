@@ -18,7 +18,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Root Dependencies
         run: npm ci || npm install
@@ -55,3 +55,4 @@ jobs:
 
       - name: Run E2E Tests
         run: npm run test:e2e || true
+
