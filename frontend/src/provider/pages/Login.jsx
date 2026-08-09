@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { login, loginWithGoogle } from '../../shared/services/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, LogIn, Briefcase, AlertCircle, Sparkles, Scissors } from 'lucide-react';
+import { useToast } from '../../shared/context/ToastContext';
 
 export default function ProviderLogin() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,7 @@ export default function ProviderLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+  const { toast } = useToast();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,7 +20,9 @@ export default function ProviderLogin() {
       await login(email, password);
       nav('/provider');
     } catch (err) {
-      setError(err.message || 'Login failed');
+      const msg = err.message || 'Login failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -31,7 +35,9 @@ export default function ProviderLogin() {
       await loginWithGoogle();
       nav('/provider');
     } catch (err) {
-      setError(err.message || 'Google sign-in failed');
+      const msg = err.message || 'Google sign-in failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

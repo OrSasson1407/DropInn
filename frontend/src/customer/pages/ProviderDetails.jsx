@@ -7,6 +7,7 @@ import {
   Image as ImageIcon, UserCheck, MessageSquare, Eye, X, CheckCircle2
 } from 'lucide-react';
 import BarberProfileModal from '../components/BarberProfileModal';
+import { useToast } from '../../shared/context/ToastContext';
 
 const DEFAULT_PORTFOLIO = [
   {
@@ -58,6 +59,7 @@ export default function ProviderDetails() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     let isMounted = true;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { signup, loginWithGoogle } from '../../shared/services/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../../firebase';
+import { useToast } from '../../shared/context/ToastContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Mail, Lock, Briefcase, AlertCircle, Sparkles, Scissors, CheckCircle2, User, FileText, ShieldCheck } from 'lucide-react';
 import { SERVICE_CATEGORIES, CATEGORY_GROUPS } from '../../shared/services/categories';
@@ -18,6 +19,7 @@ export default function ProviderSignup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+  const { toast } = useToast();
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -50,6 +52,7 @@ export default function ProviderSignup() {
       });
     } catch (err) {
       console.warn('Could not create provider profile document:', err);
+      toast.warning('Account created, but your barber profile needs attention. Please contact support.');
     }
   };
 
@@ -64,7 +67,9 @@ export default function ProviderSignup() {
       }
       nav('/provider');
     } catch (err) {
-      setError(err.message || 'Signup failed');
+      const msg = err.message || 'Signup failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -80,7 +85,9 @@ export default function ProviderSignup() {
       }
       nav('/provider');
     } catch (err) {
-      setError(err.message || 'Google sign-in failed');
+      const msg = err.message || 'Google sign-in failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

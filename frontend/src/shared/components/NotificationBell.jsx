@@ -4,12 +4,14 @@ import { db, auth } from '../../firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { useFcmNotification } from '../hooks/useFcmNotification';
+import { useToast } from '../context/ToastContext';
 
 export default function NotificationBell() {
   const { currentUser, isAdmin } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const { permission, loading, requestNotificationPermission, token } = useFcmNotification();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!currentUser) {

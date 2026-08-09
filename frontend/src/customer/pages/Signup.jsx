@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { signup, loginWithGoogle } from '../../shared/services/auth';
+import { useToast } from '../../shared/context/ToastContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, UserPlus, Scissors, AlertCircle, Sparkles } from 'lucide-react';
 
@@ -9,6 +10,7 @@ export default function CustomerSignup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+  const { toast } = useToast();
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -18,7 +20,9 @@ export default function CustomerSignup() {
       await signup(email, password);
       nav('/');
     } catch (err) {
-      setError(err.message || 'Failed to create account');
+      const msg = err.message || 'Failed to create account';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -31,7 +35,9 @@ export default function CustomerSignup() {
       await loginWithGoogle();
       nav('/');
     } catch (err) {
-      setError(err.message || 'Google sign-in failed');
+      const msg = err.message || 'Google sign-in failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

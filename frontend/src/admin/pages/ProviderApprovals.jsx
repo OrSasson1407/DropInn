@@ -4,12 +4,14 @@ import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { ShieldCheck, Check, Clock, UserCheck, Search, FileText, Activity, ShieldAlert } from 'lucide-react';
 import TransactionsMonitor from './TransactionsMonitor';
 import VerificationDocumentsAdmin from './VerificationDocumentsAdmin';
+import { useToast } from '../../shared/context/ToastContext';
 
 export default function ProviderApprovals() {
   const [providers, setProviders] = useState([]);
   const [activeTab, setActiveTab] = useState('verification_docs');
   const [loading, setLoading] = useState(true);
   const [selectedDocUrl, setSelectedDocUrl] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     getDocs(collection(db, 'providers'))

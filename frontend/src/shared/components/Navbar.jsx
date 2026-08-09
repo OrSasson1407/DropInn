@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../services/auth';
+import { useToast } from '../context/ToastContext';
 import ThemeToggle from './ThemeToggle';
 import DropInLogo from './DropInLogo';
 import NotificationBell from './NotificationBell';
@@ -17,6 +18,7 @@ export default function Navbar() {
   const { currentUser, userRole, isAdmin, isProvider } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);

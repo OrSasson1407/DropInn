@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../services/auth';
+import { useToast } from '../context/ToastContext';
 import { 
   User, LogOut, ShieldCheck, Briefcase, ShoppingBag, 
   MapPin, Gift, Clock, ChevronDown, Check, Sparkles, SwitchCamera
@@ -12,6 +13,7 @@ export default function AccountDropdown({ activeRoleMode, setActiveRoleMode }) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
