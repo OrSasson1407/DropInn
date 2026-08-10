@@ -197,6 +197,67 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Real Google Distance Matrix lookup, proxied server-side so the billed
+ * Distance Matrix API key never has to be exposed to (or called from) the
+ * browser. Requires GOOGLE_MAPS_SERVER_KEY in functions/.env - use a
+ * separate, IP-restricted server key here rather than reusing the
+ * HTTP-referrer-restricted browser key.
+ *
+ * Callable function: invoked from the frontend via httpsCallable(functions, 'getDistanceMatrix')
+ */
+exports.getDistanceMatrix = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to calculate distance.');
+  }
+
+  const { origin, destination } = data || {};
+  if (!origin || !destination || typeof origin !== 'string' || typeof destination !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Both origin and destination address strings are required.');
+  }
+
+  const apiKey = process.env.GOOGLE_MAPS_SERVER_KEY || process.env.GOOGLE_MAPS_PLATFORM_KEY;
+  if (!apiKey) {
+    throw new functions.https.HttpsError('failed-precondition', 'Distance Matrix is not configured on the server (missing GOOGLE_MAPS_SERVER_KEY).');
+  }
+
+  const url = new URL('https://maps.googleapis.com/maps/api/distancematrix/json');
+  url.searchParams.set('origins', origin);
+  url.searchParams.set('destinations', destination);
+  url.searchParams.set('mode', 'driving');
+  url.searchParams.set('units', 'metric');
+  url.searchParams.set('key', apiKey);
+
+  let json;
+  try {
+    const response = await fetch(url.toString());
+    json = await response.json();
+  } catch (err) {
+    throw new functions.https.HttpsError('unavailable', `Failed to reach Google Distance Matrix API: ${err.message}`);
+  }
+
+  if (json.status !== 'OK') {
+    throw new functions.https.HttpsError('unavailable', `Distance Matrix API error: ${json.status}${json.error_message ? ' - ' + json.error_message : ''}`);
+  }
+
+  const element = json.rows?.[0]?.elements?.[0];
+  if (!element || element.status !== 'OK') {
+    throw new functions.https.HttpsError('not-found', `Could not resolve a route between the given addresses (${element?.status || 'unknown'}).`);
+  }
+
+  const numericKm = Number((element.distance.value / 1000).toFixed(1));
+  const numericMinutes = Math.round(element.duration.value / 60);
+
+  return {
+    numericKm,
+    numericMinutes,
+    distanceText: element.distance.text,
+    durationText: element.duration.text,
+    originAddress: json.origin_addresses?.[0] || origin,
+    destinationAddress: json.destination_addresses?.[0] || destination
+  };
+});
+
+/**
  * Helper: resolve whether the calling user is allowed to act as an admin.
  * Mirrors the isAdmin() logic already used in firestore.rules, so authorization
  * behaves consistently between client-side rules and server-side callables.

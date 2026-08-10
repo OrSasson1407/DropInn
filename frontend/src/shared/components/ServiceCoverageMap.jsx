@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { 
   APIProvider, Map, AdvancedMarker, Pin, InfoWindow 
 } from '@vis.gl/react-google-maps';
@@ -37,12 +37,24 @@ const LANDMARKS = [
   { id: 'holon', name: 'Sokolov St, Holon', lat: 32.0145, lng: 34.7745, x: 250, y: 290, district: 'Holon', zone: 'outer' }
 ];
 
-// Active mobile provider base locations
-const PROVIDER_BASES = [
-  { id: 'p1', name: 'Marco V. (Mobile Unit #1)', lat: 32.0680, lng: 34.7780, x: 220, y: 180, category: 'Barber' },
-  { id: 'p2', name: 'Elena R. (Mobile Salon #2)', lat: 32.0780, lng: 34.7900, x: 280, y: 140, category: 'Stylist' },
-  { id: 'p3', name: 'David K. (Mobile Groomer #3)', lat: 32.1500, lng: 34.7900, x: 195, y: 90, category: 'Barber' }
-];
+// Approximate lat/lng -> illustrative canvas (SVG) x/y projection, anchored on
+// the DropIn HQ hub marker at canvas (220, 170) / (32.0711, 34.7871).
+// Only used for the fallback SVG map; the real Google Map uses actual lat/lng.
+function latLngToCanvasXY(lat, lng) {
+  const HUB_LAT = 32.0711;
+  const HUB_LNG = 34.7871;
+  const KM_PER_DEG_LAT = 111;
+  const KM_PER_DEG_LNG = 91;
+  const PX_PER_KM = 15;
+
+  const dLatKm = (lat - HUB_LAT) * KM_PER_DEG_LAT;
+  const dLngKm = (lng - HUB_LNG) * KM_PER_DEG_LNG;
+
+  const x = Math.min(495, Math.max(5, 220 + dLngKm * PX_PER_KM));
+  const y = Math.min(345, Math.max(5, 170 - dLatKm * PX_PER_KM));
+
+  return { x, y };
+}
 
 export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, isCompact = false, orderId = null, providerLocation = null }) {
   const [pinnedPos, setPinnedPos] = useState({ x: 230, y: 190 });
@@ -56,6 +68,41 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
   const [activeInfoWindow, setActiveInfoWindow] = useState(null);
   const [mapAuthError, setMapAuthError] = useState(false);
   const [liveProviderLoc, setLiveProviderLoc] = useState(providerLocation);
+  const [activeProviders, setActiveProviders] = useState([]);
+
+  // Real-time list of active, approved providers with a pinned base location.
+  // Drives both the "X Pros On Duty" badge and the map markers below.
+  useEffect(() => {
+    const providersQuery = query(
+      collection(db, 'providers'),
+      where('isAvailable', '==', true),
+      where('isApproved', '==', true)
+    );
+    const unsubscribe = onSnapshot(providersQuery, (snap) => {
+      const providers = snap.docs
+        .map((d) => {
+          const data = d.data();
+          const lat = data.baseLocation?.lat;
+          const lng = data.baseLocation?.lng;
+          if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+          const { x, y } = latLngToCanvasXY(lat, lng);
+          return {
+            id: d.id,
+            name: data.name || 'Provider',
+            category: data.category || '',
+            lat,
+            lng,
+            x,
+            y
+          };
+        })
+        .filter(Boolean);
+      setActiveProviders(providers);
+    }, (error) => {
+      console.warn('Active providers snapshot error:', error);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Sync prop changes for provider location
   useEffect(() => {
@@ -318,8 +365,8 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
                   <Pin background="#f59e0b" glyphColor="#0f172a" borderColor="#ffffff" />
                 </AdvancedMarker>
 
-                {/* Mobile Barber Base Units */}
-                {PROVIDER_BASES.map((p) => (
+                {/* Mobile Barber Base Units (real, active & approved providers) */}
+                {activeProviders.map((p) => (
                   <AdvancedMarker
                     key={p.id}
                     position={{ lat: p.lat, lng: p.lng }}
@@ -347,7 +394,9 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
                   >
                     <div className="text-slate-900 font-sans p-1">
                       <strong className="block text-xs font-black">DropIn Mobile HQ</strong>
-                      <span className="text-[10px] text-slate-600 block">3 Mobile Barber Units Active</span>
+                      <span className="text-[10px] text-slate-600 block">
+                        {activeProviders.length} Mobile {activeProviders.length === 1 ? 'Unit' : 'Units'} Active
+                      </span>
                     </div>
                   </InfoWindow>
                 )}
@@ -450,7 +499,7 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
               </text>
             </g>
 
-            {PROVIDER_BASES.map((p) => (
+            {activeProviders.map((p) => (
               <g key={p.id} transform={`translate(${p.x}, ${p.y})`}>
                 <circle r="5" fill="#10b981" stroke="#ffffff" strokeWidth="1.5" />
                 <text x="8" y="-4" fill="#34d399" fontSize="8" fontWeight="bold">
@@ -561,7 +610,7 @@ export default function ServiceCoverageMap({ selectedAddress, onSelectLocation, 
           <span>Mobile Barber Units active in Tel Aviv Metropolitan & Central Region</span>
         </div>
         <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-          3 Pros On Duty
+          {activeProviders.length} {activeProviders.length === 1 ? 'Pro' : 'Pros'} On Duty
         </span>
       </div>
     </div>

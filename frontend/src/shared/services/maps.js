@@ -2,6 +2,8 @@
  * Google Maps / Location Distance Matrix & Driving Time Engine
  * Computes drive distances and travel time ETAs for on-demand barber dispatch.
  */
+import { functions } from '../../firebase';
+import { httpsCallable } from 'firebase/functions';
 
 // Preset Israeli tech hubs and cities with real geographic coordinates
 const CITY_COORDS = {
@@ -49,7 +51,26 @@ function extractCoords(addressStr, defaultCity = 'tel aviv') {
  * @returns {Promise<{distance: string, time: string, numericMinutes: number, numericKm: number}>}
  */
 export async function calculateDistance(origin = 'Tel Aviv Center', destination = '') {
-  // If Google Maps JS SDK DistanceMatrixService is available on window, try calling it
+  // 1) Preferred: real Google Distance Matrix, proxied through the getDistanceMatrix
+  //    Cloud Function so the billed server-side API key never touches the browser.
+  if (functions && destination) {
+    try {
+      const callable = httpsCallable(functions, 'getDistanceMatrix');
+      const result = await callable({ origin, destination });
+      const { numericKm, numericMinutes } = result.data;
+      return {
+        distance: `${numericKm} km`,
+        time: `${numericMinutes} mins`,
+        numericMinutes,
+        numericKm,
+        formattedEta: `${numericMinutes} min (${numericKm} km away)`
+      };
+    } catch (err) {
+      console.warn('getDistanceMatrix Cloud Function unavailable, falling back:', err);
+    }
+  }
+
+  // 2) Fallback: client-side Google Maps JS SDK DistanceMatrixService, if loaded on the page
   if (window.google?.maps?.DistanceMatrixService && destination) {
     try {
       const service = new window.google.maps.DistanceMatrixService();
@@ -85,7 +106,8 @@ export async function calculateDistance(origin = 'Tel Aviv Center', destination 
     }
   }
 
-  // Fallback to real Haversine spherical coordinate calculation
+  // 3) Final fallback: Haversine spherical coordinate estimate (works fully
+  //    offline / without any Maps key or Cloud Function deployed)
   const originCoords = extractCoords(origin, 'tel aviv');
   const destCoords = extractCoords(destination, 'tel aviv');
 
@@ -118,4 +140,3 @@ export function getGoogleMapsNavigationUrl(address) {
   if (!address) return 'https://maps.google.com';
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
-
