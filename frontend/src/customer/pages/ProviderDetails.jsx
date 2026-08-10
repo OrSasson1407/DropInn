@@ -36,23 +36,6 @@ const DEFAULT_PORTFOLIO = [
   }
 ];
 
-const DEFAULT_REVIEWS = [
-  {
-    id: 'r1',
-    author: 'Daniel M.',
-    rating: 5,
-    date: '2 days ago',
-    comment: 'Best skin fade I have ever gotten! Arrived at my apartment in 18 minutes, brought professional lighting and mat. Extremely clean & polite.'
-  },
-  {
-    id: 'r2',
-    author: 'Eitan K.',
-    rating: 5,
-    date: '1 week ago',
-    comment: 'Saved me before an urgent meeting. Razor line on the beard was 10/10 sharp. Will definitely rebook.'
-  }
-];
-
 export default function ProviderDetails() {
   const { id } = useParams();
   const [provider, setProvider] = useState(null);
@@ -81,11 +64,15 @@ export default function ProviderDetails() {
 
   const name = provider?.name || `Barber #${id.substring(0, 6)}`;
   const price = provider?.price || 100;
-  const rating = provider?.rating || 4.9;
-  const bio = provider?.bio || `${name} is a master barber with 8+ years of craft experience specializing in precision skin fades, hot towel razor shaves, and tailored beard sculpting. Servicing clients across the metropolitan area with mobile studio equipment.`;
+  const bio = provider?.bio || `${name} is a mobile barber servicing clients across the metropolitan area with professional equipment.`;
   const specialties = provider?.specialties || ['Skin Fades', 'Beard Sculpting', 'Hot Towel Razor', 'Kid Cuts', 'Hair Tattoo Lines'];
   const portfolio = provider?.portfolio || DEFAULT_PORTFOLIO;
-  const reviews = provider?.reviews || DEFAULT_REVIEWS;
+
+  // Never fabricate ratings or testimonials for a real provider - an empty
+  // track record must read as "new", not as a fake 4.9 with invented reviews.
+  const reviews = Array.isArray(provider?.reviews) ? provider.reviews : [];
+  const hasRating = typeof provider?.rating === 'number' && reviews.length > 0;
+  const rating = hasRating ? provider.rating : null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -138,8 +125,14 @@ export default function ProviderDetails() {
               className="bg-slate-950 hover:bg-slate-800 border border-slate-800 px-4 py-2 rounded-2xl flex items-center gap-2 text-amber-400 transition-all cursor-pointer"
             >
               <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-              <span className="font-extrabold text-lg">{rating}</span>
-              <span className="text-xs text-slate-400 font-normal underline">({reviews.length} reviews)</span>
+              {hasRating ? (
+                <>
+                  <span className="font-extrabold text-lg">{rating.toFixed(1)}</span>
+                  <span className="text-xs text-slate-400 font-normal underline">({reviews.length} review{reviews.length === 1 ? '' : 's'})</span>
+                </>
+              ) : (
+                <span className="font-extrabold text-sm text-slate-300">New - no reviews yet</span>
+              )}
             </button>
           </div>
         </div>
@@ -258,12 +251,20 @@ export default function ProviderDetails() {
                 <MessageSquare className="w-5 h-5 text-amber-400" />
                 <h3 className="text-base font-bold text-white">Verified Customer Reviews</h3>
               </div>
-              <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <span>{rating} Score</span>
-              </div>
+              {hasRating && (
+                <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
+                  <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  <span>{rating.toFixed(1)} Score</span>
+                </div>
+              )}
             </div>
 
+            {reviews.length === 0 ? (
+              <div className="p-6 text-center bg-slate-950 border border-dashed border-slate-800 rounded-2xl">
+                <p className="text-sm text-slate-300 font-medium">No reviews yet</p>
+                <p className="text-xs text-slate-500 mt-1">Be the first to book {name} and leave a review.</p>
+              </div>
+            ) : (
             <div className="space-y-3">
               {reviews.map((rev) => (
                 <div key={rev.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
@@ -280,6 +281,7 @@ export default function ProviderDetails() {
                 </div>
               ))}
             </div>
+            )}
           </div>
 
         </div>

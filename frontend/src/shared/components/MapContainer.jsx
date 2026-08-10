@@ -86,13 +86,21 @@ export default function MapContainer({
   defaultRadiusKm = 10,
   onPinCoverage,
   readOnly = false,
-  title = "Provider Mobile Service Territory"
+  title = "Provider Mobile Service Territory",
+  markers = null,
+  onMarkerClick
 }) {
+  // Multi-marker "browse providers" mode: no click-to-pin, no radius drawer,
+  // just the customer's location plus a pin per provider.
+  const isMarkersMode = Array.isArray(markers);
+  const effectiveReadOnly = readOnly || isMarkersMode;
+
   const [pinnedCoords, setPinnedCoords] = useState(center);
   const [radiusKm, setRadiusKm] = useState(defaultRadiusKm);
   const [pinnedName, setPinnedName] = useState("Tel Aviv Metropolitan Central Hub");
   const [isHovered, setIsHovered] = useState(false);
   const [mapAuthError, setMapAuthError] = useState(false);
+  const [activeMarkerId, setActiveMarkerId] = useState(null);
 
   // Intercept Google Maps auth failure gracefully
   useEffect(() => {
@@ -117,7 +125,7 @@ export default function MapContainer({
   }, [center]);
 
   const handleMapClick = (e) => {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
     if (!e.detail?.latLng) return;
     const lat = Number(e.detail.latLng.lat.toFixed(5));
     const lng = Number(e.detail.latLng.lng.toFixed(5));
@@ -166,7 +174,7 @@ export default function MapContainer({
         </div>
 
         {/* Coverage Radius Slider */}
-        {!readOnly && (
+        {!effectiveReadOnly && (
           <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 px-3.5 py-1.5 rounded-xl text-xs">
             <span className="text-slate-400 font-bold flex items-center gap-1">
               <Sliders className="w-3.5 h-3.5 text-amber-400" />
@@ -199,45 +207,103 @@ export default function MapContainer({
               style={{ width: '100%', height: '100%' }}
               onClick={handleMapClick}
             >
-              <AdvancedMarker position={pinnedCoords} title="Provider Dispatch Base">
-                <Pin background="#f59e0b" glyphColor="#0f172a" borderColor="#ffffff" />
-              </AdvancedMarker>
+              {isMarkersMode ? (
+                <>
+                  <AdvancedMarker position={center} title="Your Location">
+                    <Pin background="#38bdf8" glyphColor="#0f172a" borderColor="#ffffff" />
+                  </AdvancedMarker>
+                  {markers.map((m) => (
+                    <AdvancedMarker
+                      key={m.id}
+                      position={{ lat: m.lat, lng: m.lng }}
+                      title={m.label || 'Provider'}
+                      onClick={() => {
+                        setActiveMarkerId(m.id);
+                        if (onMarkerClick) onMarkerClick(m);
+                      }}
+                    >
+                      <Pin background="#f59e0b" glyphColor="#0f172a" borderColor="#ffffff" />
+                    </AdvancedMarker>
+                  ))}
+                  {activeMarkerId && (() => {
+                    const active = markers.find((m) => m.id === activeMarkerId);
+                    if (!active) return null;
+                    return (
+                      <InfoWindow
+                        position={{ lat: active.lat, lng: active.lng }}
+                        onCloseClick={() => setActiveMarkerId(null)}
+                      >
+                        <div style={{ color: '#0f172a', fontWeight: 700, fontSize: '12px' }}>
+                          {active.label}
+                          {active.sublabel && (
+                            <div style={{ fontWeight: 500, opacity: 0.8 }}>{active.sublabel}</div>
+                          )}
+                        </div>
+                      </InfoWindow>
+                    );
+                  })()}
+                </>
+              ) : (
+                <AdvancedMarker position={pinnedCoords} title="Provider Dispatch Base">
+                  <Pin background="#f59e0b" glyphColor="#0f172a" borderColor="#ffffff" />
+                </AdvancedMarker>
+              )}
             </Map>
           </APIProvider>
         ) : (
           /* SVG Fallback Canvas styled with Grey Warm Luxury Aesthetic */
-          <div className="w-full h-full relative bg-slate-950 flex flex-col items-center justify-center p-6 text-center select-none cursor-crosshair" onClick={() => !readOnly && handleMapClick({ detail: { latLng: { lat: 32.0711, lng: 34.7871 } } })}>
+          <div className="w-full h-full relative bg-slate-950 flex flex-col items-center justify-center p-6 text-center select-none cursor-crosshair" onClick={() => !effectiveReadOnly && handleMapClick({ detail: { latLng: { lat: 32.0711, lng: 34.7871 } } })}>
             {/* Grid Pattern */}
             <svg className="absolute inset-0 w-full h-full opacity-30">
               <pattern id="greyMapGrid" width="30" height="30" patternUnits="userSpaceOnUse">
                 <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#334155" strokeWidth="0.8" />
               </pattern>
               <rect width="100%" height="100%" fill="url(#greyMapGrid)" />
-              
-              {/* Coverage Circle */}
-              <circle
-                cx="50%"
-                cy="50%"
-                r={radiusKm * 6 + 20}
-                fill="#f59e0b"
-                fillOpacity="0.1"
-                stroke="#f59e0b"
-                strokeWidth="2"
-                strokeDasharray="6 4"
-                className="animate-pulse"
-              />
-              {/* Center Pin */}
-              <circle cx="50%" cy="50%" r="8" fill="#f59e0b" stroke="#ffffff" strokeWidth="2.5" />
+
+              {!isMarkersMode && (
+                <>
+                  {/* Coverage Circle */}
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r={radiusKm * 6 + 20}
+                    fill="#f59e0b"
+                    fillOpacity="0.1"
+                    stroke="#f59e0b"
+                    strokeWidth="2"
+                    strokeDasharray="6 4"
+                    className="animate-pulse"
+                  />
+                  {/* Center Pin */}
+                  <circle cx="50%" cy="50%" r="8" fill="#f59e0b" stroke="#ffffff" strokeWidth="2.5" />
+                </>
+              )}
             </svg>
 
-            <div className="relative z-10 space-y-2 pointer-events-none bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl border border-slate-800 shadow-2xl max-w-sm">
+            <div className="relative z-10 space-y-2 pointer-events-none bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl border border-slate-800 shadow-2xl max-w-sm max-h-full overflow-auto">
               <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/30">
                 <MapPin className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <h4 className="font-black text-white text-xs">Grey Luxury Coverage Map Active</h4>
-              <p className="text-[11px] text-slate-400">
-                Base location pinned at <strong className="text-amber-400 font-mono">{pinnedCoords.lat}, {pinnedCoords.lng}</strong>. Serving a <strong className="text-amber-400 font-mono">{radiusKm} km</strong> radius zone.
-              </p>
+              {isMarkersMode ? (
+                <>
+                  <h4 className="font-black text-white text-xs">Map preview unavailable</h4>
+                  <p className="text-[11px] text-slate-400">
+                    Add a Google Maps key to see live pins. {markers.length} provider{markers.length === 1 ? '' : 's'} nearby:
+                  </p>
+                  <ul className="text-[11px] text-amber-400 font-semibold space-y-0.5 text-left">
+                    {markers.slice(0, 6).map((m) => (
+                      <li key={m.id}>• {m.label || 'Provider'}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <h4 className="font-black text-white text-xs">Grey Luxury Coverage Map Active</h4>
+                  <p className="text-[11px] text-slate-400">
+                    Base location pinned at <strong className="text-amber-400 font-mono">{pinnedCoords.lat}, {pinnedCoords.lng}</strong>. Serving a <strong className="text-amber-400 font-mono">{radiusKm} km</strong> radius zone.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -249,14 +315,27 @@ export default function MapContainer({
               <MapPin className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Service Base Hub</span>
-              <p className="text-xs font-bold text-white truncate">{pinnedName}</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                {isMarkersMode ? 'Your Location' : 'Service Base Hub'}
+              </span>
+              <p className="text-xs font-bold text-white truncate">
+                {isMarkersMode ? 'Centered on your device' : pinnedName}
+              </p>
             </div>
           </div>
 
           <div className="text-right shrink-0">
-            <span className="text-[10px] text-slate-400 block font-semibold">Service Boundary</span>
-            <span className="text-xs font-extrabold text-amber-400">{radiusKm} km radius</span>
+            {isMarkersMode ? (
+              <>
+                <span className="text-[10px] text-slate-400 block font-semibold">Providers Shown</span>
+                <span className="text-xs font-extrabold text-amber-400">{markers.length}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-[10px] text-slate-400 block font-semibold">Service Boundary</span>
+                <span className="text-xs font-extrabold text-amber-400">{radiusKm} km radius</span>
+              </>
+            )}
           </div>
         </div>
       </div>

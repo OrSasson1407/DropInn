@@ -1,14 +1,19 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Star, MapPin, Loader2, ShieldCheck } from 'lucide-react';
+import { Search, Star, MapPin, Loader2, ShieldCheck, Map as MapIcon, List } from 'lucide-react';
 import { getAvailableProviders } from '../../shared/services/firestore';
 import { fetchServiceCategories } from '../../shared/services/categories';
+import { useRealLocationData } from '../../shared/hooks/useRealLocationData';
+import MapContainer from '../../shared/components/MapContainer';
 
 export default function Home() {
     const [searchParams] = useSearchParams();
     const [showAllCategories, setShowAllCategories] = useState(false);
     const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [viewMode, setViewMode] = useState('list'); // 'list' | 'map'
+
+    const { location } = useRealLocationData();
 
     const [providers, setProviders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -87,6 +92,23 @@ export default function Home() {
         });
     }, [providers, selectedCategory, searchQuery]);
 
+    // Only providers with a real pinned base location can show up on the map
+    const mapMarkers = useMemo(() => {
+        return visibleProviders
+            .filter(p => p.baseLocation && typeof p.baseLocation.lat === 'number' && typeof p.baseLocation.lng === 'number')
+            .map(p => ({
+                id: p.id,
+                lat: p.baseLocation.lat,
+                lng: p.baseLocation.lng,
+                label: p.name || 'Provider',
+                sublabel: p.category || undefined
+            }));
+    }, [visibleProviders]);
+
+    const mapCenter = (typeof location.lat === 'number' && typeof location.lng === 'number')
+        ? { lat: location.lat, lng: location.lng }
+        : { lat: 32.0711, lng: 34.7871 }; // Tel Aviv fallback while GPS resolves / is denied
+
     return (
         <div className="max-w-5xl mx-auto">
             <h1 className="text-3xl font-extrabold text-white mb-6">Find a Service</h1>
@@ -148,19 +170,55 @@ export default function Home() {
 
             {/* --- PROVIDERS SECTION --- */}
             <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                     <h2 className="text-xl font-bold text-white">Available Providers</h2>
-                    {selectedCategory && (
-                        <button
-                            onClick={() => setSelectedCategory(null)}
-                            className="text-xs font-semibold text-slate-400 hover:text-white"
-                        >
-                            Clear filter: {selectedCategory} ×
-                        </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {selectedCategory && (
+                            <button
+                                onClick={() => setSelectedCategory(null)}
+                                className="text-xs font-semibold text-slate-400 hover:text-white"
+                            >
+                                Clear filter: {selectedCategory} ×
+                            </button>
+                        )}
+                        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    viewMode === 'list' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/40' : 'text-slate-400 hover:text-white border border-transparent'
+                                }`}
+                            >
+                                <List className="w-3.5 h-3.5" /> List
+                            </button>
+                            <button
+                                onClick={() => setViewMode('map')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    viewMode === 'map' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/40' : 'text-slate-400 hover:text-white border border-transparent'
+                                }`}
+                            >
+                                <MapIcon className="w-3.5 h-3.5" /> Map
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                {loading ? (
+                {viewMode === 'map' ? (
+                    <div className="space-y-3">
+                        <MapContainer
+                            center={mapCenter}
+                            zoom={12}
+                            title="Providers Near You"
+                            markers={mapMarkers}
+                        />
+                        {!loading && mapMarkers.length === 0 && (
+                            <p className="text-xs text-slate-500 text-center">
+                                {visibleProviders.length === 0
+                                    ? 'No providers to show on the map yet.'
+                                    : 'None of the matching providers have a pinned location yet.'}
+                            </p>
+                        )}
+                    </div>
+                ) : loading ? (
                     <div className="p-10 text-center bg-slate-900/50 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-3">
                         <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
                         <p className="text-slate-400 text-sm">Loading available providers...</p>
