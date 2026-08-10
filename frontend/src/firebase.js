@@ -1,6 +1,6 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+﻿import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, isSupported } from 'firebase/messaging';
@@ -20,9 +20,14 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
+
+// experimentalAutoDetectLongPolling avoids the QUIC_NETWORK_IDLE_TIMEOUT error
+// some networks throw when Firestore tries to use its default WebChannel/QUIC transport.
+const firestoreOptions = { experimentalAutoDetectLongPolling: true, useFetchStreams: false };
 export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+  ? initializeFirestore(app, firestoreOptions, firebaseConfig.firestoreDatabaseId)
+  : initializeFirestore(app, firestoreOptions);
+
 export const functions = typeof getFunctions === 'function' ? getFunctions(app) : null;
 export const storage = typeof getStorage === 'function' ? getStorage(app) : null;
 
