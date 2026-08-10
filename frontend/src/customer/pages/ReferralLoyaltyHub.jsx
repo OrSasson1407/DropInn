@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Award, Share2, Copy, CheckCircle2, Gift, Sparkles, Shield, UserPlus, Trophy } from 'lucide-react';
 import { INITIAL_LOYALTY_TIERS } from '../../shared/services/v2Data';
 import { useToast } from '../../shared/context/ToastContext';
@@ -17,7 +17,13 @@ export default function ReferralLoyaltyHub() {
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const currentTier = INITIAL_LOYALTY_TIERS[1]; // Gold VIP for 380 points
+  // Safe fallback to prevent crashes when the array is empty
+  const currentTier = INITIAL_LOYALTY_TIERS[1] || {
+    id: 'standard',
+    name: 'VIP Member',
+    minPoints: 0,
+    perks: ['Earn points on every booking']
+  };
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -74,14 +80,14 @@ export default function ReferralLoyaltyHub() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-black uppercase text-amber-400 tracking-wider">Current VIP Status</span>
             <span className="bg-amber-500 text-slate-950 font-black text-[10px] uppercase px-3 py-1 rounded-full">
-              {currentTier.name}
+              {currentTier?.name}
             </span>
           </div>
 
           <div className="space-y-1">
             <p className="text-xs text-slate-300 font-bold">Active Perks:</p>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-300">
-              {currentTier.perks.map((p) => (
+              {currentTier?.perks?.map((p) => (
                 <li key={p} className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>{p}</span>
@@ -99,40 +105,46 @@ export default function ReferralLoyaltyHub() {
           <span>Loyalty VIP Tiers</span>
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {INITIAL_LOYALTY_TIERS.map((tier) => {
-            const isCurrent = tier.id === currentTier.id;
+        {INITIAL_LOYALTY_TIERS && INITIAL_LOYALTY_TIERS.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {INITIAL_LOYALTY_TIERS.map((tier) => {
+              const isCurrent = tier.id === currentTier?.id;
 
-            return (
-              <div
-                key={tier.id}
-                className={`bg-slate-900 border rounded-3xl p-6 space-y-4 shadow-xl relative ${
-                  isCurrent ? 'border-amber-500/80 ring-1 ring-amber-500/30' : 'border-slate-800'
-                }`}
-              >
-                {isCurrent && (
-                  <span className="absolute -top-3 right-6 bg-amber-500 text-slate-950 font-black text-[10px] uppercase px-3 py-1 rounded-full">
-                    YOU ARE HERE
-                  </span>
-                )}
+              return (
+                <div
+                  key={tier.id}
+                  className={`bg-slate-900 border rounded-3xl p-6 space-y-4 shadow-xl relative ${
+                    isCurrent ? 'border-amber-500/80 ring-1 ring-amber-500/30' : 'border-slate-800'
+                  }`}
+                >
+                  {isCurrent && (
+                    <span className="absolute -top-3 right-6 bg-amber-500 text-slate-950 font-black text-[10px] uppercase px-3 py-1 rounded-full">
+                      YOU ARE HERE
+                    </span>
+                  )}
 
-                <div className="space-y-1">
-                  <h3 className="font-black text-lg text-white">{tier.name}</h3>
-                  <p className="text-xs text-slate-400 font-mono">{tier.minPoints}+ Points Required</p>
+                  <div className="space-y-1">
+                    <h3 className="font-black text-lg text-white">{tier.name}</h3>
+                    <p className="text-xs text-slate-400 font-mono">{tier.minPoints}+ Points Required</p>
+                  </div>
+
+                  <ul className="space-y-2 text-xs text-slate-300">
+                    {tier.perks?.map((perk) => (
+                      <li key={perk} className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>{perk}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                <ul className="space-y-2 text-xs text-slate-300">
-                  {tier.perks.map((perk) => (
-                    <li key={perk} className="flex items-center gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>{perk}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-8 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+            <p className="text-slate-400 text-sm">Loyalty tiers are currently being synced. Check back soon!</p>
+          </div>
+        )}
       </div>
     </div>
   );

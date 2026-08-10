@@ -1,7 +1,9 @@
 ﻿import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
 import ProtectedRoute from './shared/components/ProtectedRoute';
 import Navbar from './shared/components/Navbar';
+import SeedButton from './shared/components/SeedButton';
 
 const Home = lazy(() => import('./customer/pages/Home'));
 const CustomerLogin = lazy(() => import('./customer/pages/Login'));
@@ -42,6 +44,7 @@ function RouteFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+      <SeedButton />
       <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 antialiased bg-texture-grain">
         <Navbar />
         <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -84,7 +87,7 @@ export default function App() {
         <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] py-8 text-center text-xs text-[var(--text-muted)]">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="font-heading font-bold text-[var(--text-primary)]">DropInn Marketplace</span> — At-Home Grooming & Barbering ("Accessible Premium Lifestyle")
+              <span className="font-heading font-bold text-[var(--text-primary)]">DropInn Marketplace</span> — Unlimited At-Home Services ("Accessible Premium Lifestyle")
             </div>
             <div className="flex items-center gap-4 text-[var(--text-secondary)] font-medium flex-wrap">
               <a href="/legal?doc=terms" className="hover:text-amber-500 text-[11px]">Terms of Service</a>
