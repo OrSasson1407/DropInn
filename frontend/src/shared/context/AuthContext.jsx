@@ -35,7 +35,9 @@ export function AuthProvider({ children }) {
             setUserProfile(snap.data());
           } else {
             const isAdminEmail = user.email === 'orsasson140701@gmail.com' || user.email === 'admin@dropinn.com';
-            const initialRole = isAdminEmail ? 'admin' : (user.email?.includes('provider') ? 'provider' : 'customer');
+            // Role is explicitly stamped by the Customer/Provider signup pages at account creation time.
+            // This fallback must never guess a role from the email address.
+            const initialRole = isAdminEmail ? 'admin' : 'customer';
             const defaultProfile = {
               uid: user.uid,
               email: user.email,

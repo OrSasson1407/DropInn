@@ -4,6 +4,9 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
+const Stripe = require('stripe');
+const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
+
 // Single source of truth commission calculation (Cloud Function authority)
 exports.processCommission = functions.firestore.document('orders/{orderId}').onCreate((snap, ctx) => {
   const order = snap.data();
@@ -22,11 +25,9 @@ async function performDailyAnalyticsAggregation(targetDateStr) {
   const db = admin.firestore();
   const dateKey = targetDateStr || new Date().toISOString().split('T')[0];
 
-  // Fetch all orders
   const ordersSnap = await db.collection('orders').get();
   const allOrders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-  // Filter orders for target date or overall snapshot
   const dailyOrders = allOrders.filter(order => {
     if (!order.createdAt) return true;
     const createdAtStr = typeof order.createdAt.toDate === 'function' 
@@ -45,19 +46,15 @@ async function performDailyAnalyticsAggregation(targetDateStr) {
   const platformCommission = Math.round(gmv * 0.15);
   const providerPayouts = gmv - platformCommission;
 
-  // Calculate churn rate percentage: (cancelled / total) * 100
   const churnRate = bookingVolume > 0 
     ? Number(((cancelledOrders.length / bookingVolume) * 100).toFixed(2))
     : 0;
 
-  // Fetch active providers
   const providersSnap = await db.collection('providers').get();
   const activeProvidersCount = providersSnap.docs.filter(d => d.data().isAvailable || d.data().isApproved).length;
 
-  // Fetch active customers
   const uniqueCustomers = new Set(targetOrders.map(o => o.customerId).filter(Boolean));
 
-  // Regional breakdown
   const regionBreakdown = {
     'Tel Aviv & Central': 0,
     'Jerusalem & Surrounding': 0,
@@ -118,3 +115,167 @@ exports.triggerAnalyticsRollupHttp = functions.https.onRequest(async (req, res) 
   }
 });
 
+/**
+ * Creates a real Stripe PaymentIntent for a booking and logs a 'pending' payment
+ * record in Firestore. Runs server-side only - the client never sets the amount
+ * that actually gets charged; it just requests a PaymentIntent for a given order
+ * and the order's stored price is used to compute it.
+ *
+ * Callable function: invoked from the frontend via httpsCallable(functions, 'createPaymentIntent')
+ */
+exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
+  if (!stripe) {
+    throw new functions.https.HttpsError('failed-precondition', 'Stripe is not configured on the server (missing STRIPE_SECRET_KEY).');
+  }
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to start a payment.');
+  }
+
+  const { orderId, amount, providerId } = data || {};
+  const customerId = context.auth.uid;
+
+  if (!orderId || typeof orderId !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'A valid orderId is required.');
+  }
+  const numericAmount = Number(amount);
+  if (!numericAmount || numericAmount <= 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'A valid positive amount is required.');
+  }
+
+  const db = admin.firestore();
+
+  const orderSnap = await db.collection('orders').doc(orderId).get();
+  if (!orderSnap.exists) {
+    throw new functions.https.HttpsError('not-found', 'Order not found.');
+  }
+  const orderData = orderSnap.data();
+  if (orderData.customerId !== customerId) {
+    throw new functions.https.HttpsError('permission-denied', 'This order does not belong to you.');
+  }
+  const authoritativeAmount = Number(orderData.price);
+  if (!authoritativeAmount || authoritativeAmount <= 0) {
+    throw new functions.https.HttpsError('failed-precondition', 'Order does not have a valid price.');
+  }
+
+  const commission = Math.round(authoritativeAmount * 0.15);
+  const providerPayout = authoritativeAmount - commission;
+  const stripeAmount = Math.round(authoritativeAmount * 100);
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: stripeAmount,
+    currency: 'ils',
+    metadata: {
+      orderId,
+      customerId,
+      providerId: providerId || orderData.providerId || '',
+      commission: String(commission),
+      providerPayout: String(providerPayout)
+    }
+  });
+
+  const paymentRef = await db.collection('payments').add({
+    orderId,
+    customerId,
+    providerId: providerId || orderData.providerId || '',
+    amount: authoritativeAmount,
+    currency: 'ILS',
+    commission,
+    providerPayout,
+    stripePaymentIntentId: paymentIntent.id,
+    status: 'pending',
+    gateway: 'stripe',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  return {
+    clientSecret: paymentIntent.client_secret,
+    paymentId: paymentRef.id,
+    amount: authoritativeAmount,
+    commission,
+    providerPayout
+  };
+});
+
+/**
+ * Stripe webhook endpoint. This is the ONLY place a payment is ever marked
+ * 'succeeded' or 'failed' - the frontend cannot do this itself. Stripe signs
+ * every request with STRIPE_WEBHOOK_SECRET so we can verify it really came
+ * from Stripe before trusting it.
+ */
+exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+  if (!stripe) {
+    res.status(500).send('Stripe not configured');
+    return;
+  }
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET is not set - refusing to process webhook.');
+    res.status(500).send('Webhook secret not configured');
+    return;
+  }
+
+  let event;
+  try {
+    const signature = req.headers['stripe-signature'];
+    event = stripe.webhooks.constructEvent(req.rawBody, signature, webhookSecret);
+  } catch (err) {
+    console.error('Stripe webhook signature verification failed:', err.message);
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  const db = admin.firestore();
+
+  try {
+    if (event.type === 'payment_intent.succeeded' || event.type === 'payment_intent.payment_failed') {
+      const intent = event.data.object;
+      const isSuccess = event.type === 'payment_intent.succeeded';
+
+      const paymentsQuery = await db.collection('payments')
+        .where('stripePaymentIntentId', '==', intent.id)
+        .limit(1)
+        .get();
+
+      if (!paymentsQuery.empty) {
+        const paymentDoc = paymentsQuery.docs[0];
+        const paymentData = paymentDoc.data();
+
+        await paymentDoc.ref.update({
+          status: isSuccess ? 'succeeded' : 'failed',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        if (paymentData.orderId) {
+          await db.collection('orders').doc(paymentData.orderId).set({
+            paymentStatus: isSuccess ? 'PAID' : 'FAILED',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+
+          // Only now - once payment has actually succeeded - notify the
+          // provider that a new order exists. Before this point they never
+          // see or hear about it (see IncomingOrders.jsx paymentStatus filter).
+          if (isSuccess && paymentData.providerId) {
+            const orderSnap = await db.collection('orders').doc(paymentData.orderId).get();
+            const orderData = orderSnap.exists ? orderSnap.data() : {};
+            await db.collection('notifications').add({
+              recipientId: paymentData.providerId,
+              title: '⚡ New Incoming Service Request!',
+              body: `New booking request for ${orderData.serviceCategory || 'Grooming service'} at ${orderData.address || 'client location'}.`,
+              type: 'NEW_ORDER',
+              orderId: paymentData.orderId,
+              read: false,
+              createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        }
+      } else {
+        console.warn('Stripe webhook: no matching payment doc for PaymentIntent', intent.id);
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error('Error processing Stripe webhook:', err);
+    res.status(500).json({ error: err.message });
+  }
+});

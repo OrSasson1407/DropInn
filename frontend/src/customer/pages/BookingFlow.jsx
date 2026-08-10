@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { createOrder } from '../../shared/services/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
-import { processPayment } from '../../shared/services/payments';
+import { getStripe, createPaymentIntentForOrder } from '../../shared/services/payments';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { calculateDistance } from '../../shared/services/maps';
 import { db } from '../../firebase';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
@@ -40,6 +41,14 @@ export default function BookingFlow() {
   const [ratingVal, setRatingVal] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [distInfo, setDistInfo] = useState({ distance: '2.1 km', time: '16 mins' });
+
+  // Payment step state - set once an order is created and a Stripe PaymentIntent
+  // has been requested. The order is NOT shown to the provider until Stripe
+  // confirms the charge succeeded (see stripeWebhook Cloud Function).
+  const [paymentStep, setPaymentStep] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [pendingOrderId, setPendingOrderId] = useState(null);
+  const stripePromise = getStripe();
 
   // In-app Chat Simulation State
   const [messages, setMessages] = useState([
@@ -135,7 +144,9 @@ export default function BookingFlow() {
 
     setIsSubmitting(true);
     try {
-      await processPayment(totalPrice, providerId);
+      // Create the order FIRST, in an unpaid state. The provider never sees it
+      // until Stripe confirms payment succeeded (paymentStatus flips to 'PAID'
+      // via the stripeWebhook Cloud Function, not by this client).
       const ref = await createOrder(currentUser.uid, providerId, {
         address,
         price: totalPrice,
@@ -143,19 +154,35 @@ export default function BookingFlow() {
         scheduledSlot: bookingMode === 'scheduled' ? `${scheduledDate} at ${scheduledTime}` : 'Available Now',
         addons: selectedAddons,
         notes,
-        serviceCategory: provider?.category || 'Grooming & Beauty'
+        serviceCategory: provider?.category || 'Grooming & Beauty',
+        paymentStatus: 'UNPAID'
       });
-      setOrderId(ref.id);
-      
-      toast.success(
-        `Your order with ${provider?.name || 'Pro Specialist'} for ${totalPrice} ILS was successfully placed!`,
-        'Booking Confirmed'
-      );
+
+      const { clientSecret: secret } = await createPaymentIntentForOrder(ref.id, totalPrice, providerId);
+      setPendingOrderId(ref.id);
+      setClientSecret(secret);
+      setPaymentStep(true);
     } catch (err) {
-      toast.error(err.message || 'Payment processing failed. Please try again.', 'Booking Error');
+      toast.error(err.message || 'Could not start payment. Please try again.', 'Booking Error');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePaymentSuccess = (paidOrderId) => {
+    setOrderId(paidOrderId);
+    setPaymentStep(false);
+    setClientSecret(null);
+    toast.success(
+      `Your order with ${provider?.name || 'Pro Specialist'} for ${totalPrice} ILS was successfully placed!`,
+      'Booking Confirmed'
+    );
+  };
+
+  const handlePaymentCancel = () => {
+    setPaymentStep(false);
+    setClientSecret(null);
+    toast.info('Payment cancelled. Your order was not sent to the provider.', 'Payment Cancelled');
   };
 
   const handleSendChat = (e) => {
@@ -347,6 +374,17 @@ export default function BookingFlow() {
           </div>
         </div>
 
+        {paymentStep && clientSecret ? (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <PaymentCardForm
+              clientSecret={clientSecret}
+              amount={totalPrice}
+              orderId={pendingOrderId}
+              onSuccess={handlePaymentSuccess}
+              onCancel={handlePaymentCancel}
+            />
+          </Elements>
+        ) : (
         <form onSubmit={handleBook} className="space-y-6">
           {/* Booking Type: Available Now vs Schedule for Later */}
           <div className="space-y-2">
@@ -531,10 +569,112 @@ export default function BookingFlow() {
             )}
           </button>
         </form>
+        )}
       </div>
 
       {/* In-Service Safety SOS Assistance */}
       <SafetyAssistSOS activeOrderId={orderId} locationText={address} />
+    </div>
+  );
+}
+
+/**
+ * Real Stripe card entry + confirmation. Must be rendered inside an <Elements>
+ * provider (see above) so useStripe()/useElements() have context to work with.
+ */
+function PaymentCardForm({ clientSecret, amount, orderId, onSuccess, onCancel }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+  const [cardError, setCardError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setProcessing(true);
+    setCardError('');
+
+    const cardElement = elements.getElement(CardElement);
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardElement }
+    });
+
+    if (error) {
+      setCardError(error.message || 'Payment failed. Please check your card details and try again.');
+      setProcessing(false);
+      return;
+    }
+
+    if (paymentIntent && paymentIntent.status === 'succeeded') {
+      onSuccess(orderId);
+    } else {
+      setCardError('Payment did not complete. Please try again.');
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <CreditCard className="w-5 h-5 text-amber-400" /> Complete Payment
+        </h3>
+        <p className="text-xs text-slate-400">
+          Charging {amount} ILS. Your booking is only sent to the provider once payment succeeds.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="bg-white rounded-2xl p-4">
+          <CardElement
+            options={{
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#0f172a',
+                  '::placeholder': { color: '#94a3b8' }
+                },
+                invalid: { color: '#ef4444' }
+              }
+            }}
+          />
+        </div>
+
+        {cardError && (
+          <p className="text-sm text-red-400 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{cardError}</span>
+          </p>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={processing}
+            className="flex-1 py-3.5 rounded-2xl border border-slate-700 text-slate-300 font-semibold text-sm disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!stripe || processing}
+            className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Pay {amount} ILS</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

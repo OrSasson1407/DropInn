@@ -54,6 +54,20 @@ export default function ProviderSignup() {
       console.warn('Could not create provider profile document:', err);
       toast.warning('Account created, but your barber profile needs attention. Please contact support.');
     }
+
+    // Explicitly stamp this account as 'provider' in users/{uid} at creation time,
+    // so AuthContext never has to guess the role from the email address.
+    try {
+      await setDoc(doc(db, 'users', uid), {
+        uid,
+        email: userEmail,
+        displayName: providerName || userEmail?.split('@')[0] || 'Provider',
+        role: 'provider',
+        createdAt: serverTimestamp()
+      }, { merge: true });
+    } catch (err) {
+      console.warn('Could not stamp provider role on signup:', err);
+    }
   };
 
   const handleSignup = async (e) => {
@@ -233,7 +247,7 @@ export default function ProviderSignup() {
               </span>
               {docFileName && (
                 <span className="text-[10px] text-emerald-400 font-mono font-bold truncate max-w-[120px]">
-                  ✓ {docFileName}
+                  ג“ {docFileName}
                 </span>
               )}
             </div>

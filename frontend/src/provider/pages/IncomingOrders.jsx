@@ -18,7 +18,12 @@ export default function IncomingOrders() {
     return onSnapshot(
       q,
       (snap) => {
-        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const items = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          // Hide orders that are still awaiting payment confirmation. Legacy
+          // orders created before paymentStatus existed (undefined) are still
+          // shown so existing data doesn't disappear from the provider view.
+          .filter(o => o.paymentStatus !== 'UNPAID');
         items.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
         setOrders(items);
       },

@@ -49,19 +49,17 @@ export const createOrder = async (customerId, providerId, details) => {
     price,
     commission,
     status: 'pending',
+    // Defaults to UNPAID unless the caller explicitly overrides it (e.g. BookingFlow
+    // sets this while the order awaits Stripe payment confirmation). The provider
+    // is not notified and does not see this order until stripeWebhook marks it PAID.
+    paymentStatus: details.paymentStatus || 'UNPAID',
     createdAt: serverTimestamp()
   });
 
-  try {
-    await sendNotification(providerId, {
-      title: '⚡ New Incoming Service Request!',
-      body: `New booking request for ${details.serviceCategory || 'Grooming service'} at ${details.address || 'client location'}.`,
-      type: 'NEW_ORDER',
-      orderId: orderRef.id
-    });
-  } catch (e) {
-    console.warn('Could not dispatch provider notification:', e);
-  }
+  // NOTE: the "new order" notification to the provider is intentionally NOT sent
+  // here anymore. It's dispatched by the stripeWebhook Cloud Function once payment
+  // actually succeeds, so a provider is never notified of (or shown) an order that
+  // was never paid for. See functions/src/index.js.
 
   return orderRef;
 };
@@ -89,10 +87,10 @@ export const updateOrderStatus = async (orderId, newStatus, currentStatus = null
     let title = 'Order Update';
     let body = `Your order status changed to ${newStatus}.`;
     if (newStatus === 'approved') {
-      title = '✅ Order Confirmed!';
+      title = 'ג… Order Confirmed!';
       body = 'Your provider has accepted the booking and is preparing for dispatch.';
     } else if (newStatus === 'completed') {
-      title = '🎉 Service Completed!';
+      title = 'נ‰ Service Completed!';
       body = 'Your service is complete. Please rate your experience!';
     } else if (newStatus === 'declined' || newStatus === 'cancelled') {
       title = 'Order Cancelled';
@@ -209,4 +207,3 @@ export const sendNotification = async (recipientId, { title, body, type = 'GENER
     createdAt: serverTimestamp()
   });
 };
-

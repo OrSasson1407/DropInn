@@ -8,3 +8,4 @@ firebase-debug.log
 *.log
 .DS_Store
 serviceAccountKey.json
+functions/.env

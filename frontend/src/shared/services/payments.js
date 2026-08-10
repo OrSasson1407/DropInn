@@ -1,105 +1,54 @@
-import { db } from '../../firebase';
-import { collection, addDoc, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { db, functions } from '../../firebase';
+import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Lazy-loaded Stripe instance
+// Lazy-loaded Stripe.js instance (singleton)
 let stripePromise = null;
 
 export const getStripe = () => {
   if (!stripePromise) {
-    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY;
+    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
     if (key) {
       stripePromise = loadStripe(key);
+    } else {
+      console.error('VITE_STRIPE_PUBLISHABLE_KEY is not set - Stripe cannot be initialized.');
     }
   }
   return stripePromise;
 };
 
 /**
- * Real Stripe Payment Gateway Processor for DropIn Marketplace (ILS Currency)
- * Wire real payment intent / card transaction with Firestore transaction ledger.
+ * Requests a real Stripe PaymentIntent from the createPaymentIntent Cloud Function.
+ * The order MUST already exist in Firestore before calling this - the Cloud
+ * Function looks up the order's authoritative price server-side, so the
+ * amount actually charged can never be tampered with on the client.
+ *
+ * Returns { clientSecret, paymentId, amount, commission, providerPayout }
  */
-export const processPayment = async (amount, providerId, customerId = 'anonymous', orderId = null, paymentMethodId = null) => {
-  if (!amount || amount <= 0) {
-    throw new Error('Invalid payment amount');
+export const createPaymentIntentForOrder = async (orderId, amount, providerId) => {
+  if (!functions) {
+    throw new Error('Firebase Functions is not initialized.');
   }
-
-  const stripe = await getStripe();
-  const txnId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-  
-  // Single source of truth calculation
-  const commission = Math.round(amount * 0.15);
-  const providerPayout = amount - commission;
-
-  let stripePaymentIntentId = null;
-  let paymentStatus = 'succeeded';
-
-  // If Stripe API Key is configured and a payment method is provided, trigger Stripe transaction
-  if (stripe && paymentMethodId) {
-    try {
-      stripePaymentIntentId = `pi_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      paymentStatus = 'succeeded';
-    } catch (err) {
-      console.error('Stripe payment processing error:', err);
-      throw new Error(`Stripe Payment Processing Failed: ${err.message}`);
-    }
-  } else {
-    await new Promise((resolve) => setTimeout(resolve, 300));
+  if (!orderId) {
+    throw new Error('orderId is required to create a payment intent.');
   }
-
-  const paymentRecord = {
-    txnId,
-    stripePaymentIntentId,
-    amount,
-    currency: 'ILS',
-    commission,
-    providerPayout,
-    providerId,
-    customerId,
-    orderId,
-    paymentMethodId: paymentMethodId || 'pm_card_visa_demo',
-    status: paymentStatus,
-    gateway: stripe ? 'stripe' : 'stripe_sandbox',
-    createdAt: serverTimestamp()
-  };
-
-  try {
-    const docRef = await addDoc(collection(db, 'payments'), paymentRecord);
-    return {
-      success: true,
-      txn: txnId,
-      stripePaymentIntentId,
-      paymentId: docRef.id,
-      amount,
-      currency: 'ILS',
-      commission,
-      providerPayout,
-      gateway: stripe ? 'stripe' : 'stripe_sandbox'
-    };
-  } catch (err) {
-    console.warn('Payment transaction logged locally:', err);
-    return {
-      success: true,
-      txn: txnId,
-      stripePaymentIntentId,
-      amount,
-      currency: 'ILS',
-      commission,
-      providerPayout,
-      gateway: 'local_sandbox'
-    };
-  }
+  const callable = httpsCallable(functions, 'createPaymentIntent');
+  const result = await callable({ orderId, amount, providerId });
+  return result.data;
 };
 
 /**
- * Refund Flow: Reverse payment via Stripe and update Firestore payment record status
+ * Refund flow. NOTE: this currently only updates Firestore records - it does
+ * NOT yet call Stripe's real refund API. A follow-up Cloud Function
+ * (e.g. `refundPayment`) is needed to actually reverse the charge with
+ * Stripe before this can be considered production-ready.
  */
 export const processRefund = async (paymentId, orderId, refundAmount = null, reason = 'Order cancelled') => {
   if (!paymentId && !orderId) {
     throw new Error('Payment ID or Order ID is required for refund processing');
   }
 
-  const stripe = await getStripe();
   const refundTxnId = `re_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
   try {
@@ -109,13 +58,13 @@ export const processRefund = async (paymentId, orderId, refundAmount = null, rea
       if (paymentSnap.exists()) {
         const pData = paymentSnap.data();
         const actualRefund = refundAmount || pData.amount;
-        
+
         await updateDoc(paymentRef, {
-          status: 'refunded',
+          status: 'refund_requested',
           refundTxnId,
           refundAmount: actualRefund,
           refundReason: reason,
-          refundedAt: serverTimestamp()
+          refundRequestedAt: serverTimestamp()
         });
       }
     }
@@ -123,8 +72,8 @@ export const processRefund = async (paymentId, orderId, refundAmount = null, rea
     if (orderId) {
       const orderRef = doc(db, 'orders', orderId);
       await updateDoc(orderRef, {
-        status: 'CANCELLED',
-        paymentStatus: 'REFUNDED',
+        status: 'cancelled',
+        paymentStatus: 'REFUND_REQUESTED',
         cancellationReason: reason,
         updatedAt: serverTimestamp()
       });
@@ -133,9 +82,8 @@ export const processRefund = async (paymentId, orderId, refundAmount = null, rea
     return {
       success: true,
       refundTxnId,
-      status: 'refunded',
-      reason,
-      gateway: stripe ? 'stripe' : 'stripe_sandbox'
+      status: 'refund_requested',
+      reason
     };
   } catch (err) {
     console.error('Refund processing error:', err);

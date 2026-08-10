@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { signup, loginWithGoogle } from '../../shared/services/auth';
 import { useToast } from '../../shared/context/ToastContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { db } from '../../firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Mail, Lock, UserPlus, Scissors, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function CustomerSignup() {
@@ -12,12 +14,29 @@ export default function CustomerSignup() {
   const nav = useNavigate();
   const { toast } = useToast();
 
+  const stampCustomerRole = async (user) => {
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email?.split('@')[0] || 'User',
+        role: 'customer',
+        createdAt: serverTimestamp()
+      }, { merge: true });
+    } catch (err) {
+      console.warn('Could not stamp customer role on signup:', err);
+    }
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await signup(email, password);
+      const userCredential = await signup(email, password);
+      if (userCredential?.user) {
+        await stampCustomerRole(userCredential.user);
+      }
       nav('/');
     } catch (err) {
       const msg = err.message || 'Failed to create account';
@@ -32,7 +51,10 @@ export default function CustomerSignup() {
     setError('');
     setLoading(true);
     try {
-      await loginWithGoogle();
+      const res = await loginWithGoogle();
+      if (res?.user) {
+        await stampCustomerRole(res.user);
+      }
       nav('/');
     } catch (err) {
       const msg = err.message || 'Google sign-in failed';
