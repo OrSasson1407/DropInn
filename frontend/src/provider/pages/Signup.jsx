@@ -1,15 +1,17 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { signup, loginWithGoogle } from '../../shared/services/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../../firebase';
 import { useToast } from '../../shared/context/ToastContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Mail, Lock, Briefcase, AlertCircle, Sparkles, Scissors, CheckCircle2, User, FileText, ShieldCheck } from 'lucide-react';
-import { SERVICE_CATEGORIES, CATEGORY_GROUPS } from '../../shared/services/categories';
+import { CATEGORY_GROUPS, fetchServiceCategories } from '../../shared/services/categories';
 
 export default function ProviderSignup() {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState("Men's Haircuts & Beard");
+  const [category, setCategory] = useState('');
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [price, setPrice] = useState(120);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,6 +22,25 @@ export default function ProviderSignup() {
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCategories() {
+      try {
+        const cats = await fetchServiceCategories();
+        if (isMounted) {
+          setServiceCategories(cats);
+          if (cats.length > 0) setCategory(cats[0].label);
+        }
+      } catch (err) {
+        console.error('Failed to load service categories:', err);
+      } finally {
+        if (isMounted) setCategoriesLoading(false);
+      }
+    }
+    loadCategories();
+    return () => { isMounted = false; };
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -184,17 +205,26 @@ export default function ProviderSignup() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-all"
+              disabled={categoriesLoading}
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-all disabled:opacity-50"
             >
-              {CATEGORY_GROUPS.filter(g => g.id !== 'all').map(group => (
-                <optgroup key={group.id} label={`--- ${group.label} ---`}>
-                  {SERVICE_CATEGORIES.filter(cat => cat.group === group.id).map(cat => (
-                    <option key={cat.id} value={cat.label}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+              {categoriesLoading && <option value="">Loading categories...</option>}
+              {!categoriesLoading && serviceCategories.length === 0 && (
+                <option value="">No categories available - contact support</option>
+              )}
+              {CATEGORY_GROUPS.filter(g => g.id !== 'all').map(group => {
+                const groupCats = serviceCategories.filter(cat => cat.group === group.id);
+                if (groupCats.length === 0) return null;
+                return (
+                  <optgroup key={group.id} label={`--- ${group.label} ---`}>
+                    {groupCats.map(cat => (
+                      <option key={cat.id} value={cat.label}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
 
@@ -247,7 +277,7 @@ export default function ProviderSignup() {
               </span>
               {docFileName && (
                 <span className="text-[10px] text-emerald-400 font-mono font-bold truncate max-w-[120px]">
-                  ׳’ֲג€ {docFileName}
+                  ✓ {docFileName}
                 </span>
               )}
             </div>
@@ -281,5 +311,3 @@ export default function ProviderSignup() {
     </div>
   );
 }
-
-

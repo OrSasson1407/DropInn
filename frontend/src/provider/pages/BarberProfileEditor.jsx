@@ -8,18 +8,9 @@ import {
   UserCheck, Scissors, DollarSign, Image as ImageIcon, Plus, Trash2, 
   Save, CheckCircle2, Loader2, Sparkles, AlertCircle, Eye, Sparkle, Heart, Flame
 } from 'lucide-react';
-import { SERVICE_CATEGORIES, CATEGORY_GROUPS } from '../../shared/services/categories';
+import { CATEGORY_GROUPS, fetchServiceCategories } from '../../shared/services/categories';
 import ProviderVerificationUpload from './ProviderVerificationUpload';
 import MapContainer from '../../shared/components/MapContainer';
-
-const CATEGORY_OPTIONS = [
-  'Men\'s Haircuts & Beard',
-  'Manicure & Pedicure',
-  'Women\'s Hair & Blowout',
-  'Professional Makeup',
-  'Massage & Bodywork',
-  'Facial & Skincare'
-];
 
 const SUGGESTED_SPECIALTIES_BY_CAT = {
   'Men\'s Haircuts & Beard': ['Skin Fade', 'Beard Sculpting', 'Hot Towel Razor', 'Scissors Cut', 'Foil Shave', 'Hair Tattoo Design'],
@@ -39,6 +30,8 @@ export default function BarberProfileEditor() {
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Men\'s Haircuts & Beard');
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [price, setPrice] = useState(120);
   const [bio, setBio] = useState('');
   const [specialties, setSpecialties] = useState([]);
@@ -100,6 +93,22 @@ export default function BarberProfileEditor() {
 
     loadProfile();
   }, [currentUser]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCategories() {
+      try {
+        const cats = await fetchServiceCategories();
+        if (isMounted) setServiceCategories(cats);
+      } catch (err) {
+        console.error('Failed to load service categories:', err);
+      } finally {
+        if (isMounted) setCategoriesLoading(false);
+      }
+    }
+    loadCategories();
+    return () => { isMounted = false; };
+  }, []);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -237,17 +246,23 @@ export default function BarberProfileEditor() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500"
+              disabled={categoriesLoading}
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500 disabled:opacity-50"
             >
-              {CATEGORY_GROUPS.filter(g => g.id !== 'all').map(group => (
-                <optgroup key={group.id} label={`--- ${group.label} ---`}>
-                  {SERVICE_CATEGORIES.filter(cat => cat.group === group.id).map(cat => (
-                    <option key={cat.id} value={cat.label}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+              {categoriesLoading && <option value={category}>Loading categories...</option>}
+              {CATEGORY_GROUPS.filter(g => g.id !== 'all').map(group => {
+                const groupCats = serviceCategories.filter(cat => cat.group === group.id);
+                if (groupCats.length === 0) return null;
+                return (
+                  <optgroup key={group.id} label={`--- ${group.label} ---`}>
+                    {groupCats.map(cat => (
+                      <option key={cat.id} value={cat.label}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
 
@@ -325,7 +340,7 @@ export default function BarberProfileEditor() {
             </p>
             {!hasSetBaseLocation && (
               <p className="text-xs text-amber-400 mt-1">
-                You haven't pinned a real base location yet ג€” defaulting to Tel Aviv center. Pin the map below and save to update it.
+                You haven't pinned a real base location yet - defaulting to Tel Aviv center. Pin the map below and save to update it.
               </p>
             )}
           </div>

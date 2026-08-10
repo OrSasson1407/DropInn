@@ -5,15 +5,21 @@ export const seedInitialDatabase = async () => {
   console.log("Starting database seed...");
 
   try {
-    // 1. Seed Real Categories
+    // 1. Seed Real Categories (single source of truth for the whole app -
+    // consumed via fetchServiceCategories() in shared/services/categories.js)
     const categories = [
       { id: 'haircut', group: 'grooming', label: "Men's Haircuts & Beard", description: 'Skin fades, hot towel razor, beard sculpting & lineups', active: true },
       { id: 'nails', group: 'grooming', label: 'Manicure & Pedicure', description: 'Gel manicure, medical pedicure, acrylics & custom nail art', active: true },
+      { id: 'makeup', group: 'grooming', label: 'Makeup Artist', description: 'Bridal glam, evening makeup, soft glam & lash application', active: true },
       { id: 'massage', group: 'wellness', label: 'Massage & Bodywork', description: 'Deep tissue, Swedish, hot stone & sports recovery massage', active: true },
+      { id: 'personal-training', group: 'wellness', label: 'Personal Training', description: 'One-on-one fitness coaching and at-home workout sessions', active: true },
       { id: 'cleaning', group: 'home', label: 'House Cleaning & Maid', description: 'Deep home cleaning, move-in/out, Airbnb reset', active: true },
       { id: 'handyman', group: 'home', label: 'Handyman & Repairs', description: 'TV mounting, furniture assembly, shelf hanging, repairs', active: true },
       { id: 'plumbing', group: 'home', label: 'Plumbing & Emergency Leaks', description: 'Drain unblocking, leak repair, faucet & toilet fix', active: true },
-      { id: 'electrical', group: 'home', label: 'Electrician & Lighting', description: 'Light fixture installs, short circuit fix, smart switches', active: true }
+      { id: 'electrical', group: 'home', label: 'Electrician & Lighting', description: 'Light fixture installs, short circuit fix, smart switches', active: true },
+      { id: 'moving', group: 'home', label: 'Moving Services', description: 'Local moving help, loading, packing & furniture transport', active: true },
+      { id: 'dog-walking', group: 'lifestyle', label: 'Dog Walking', description: 'On-demand and scheduled dog walking around your area', active: true },
+      { id: 'photography', group: 'lifestyle', label: 'Photography', description: 'Portrait, event and product photography sessions', active: true }
     ];
 
     for (const cat of categories) {
