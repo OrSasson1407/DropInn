@@ -1,4 +1,4 @@
-import { db } from '../../firebase';
+﻿import { db } from '../../firebase';
 import { 
   collection, getDocs, doc, setDoc, addDoc, updateDoc, 
   serverTimestamp, query, where, getDoc 
@@ -39,7 +39,7 @@ export const updateProviderProfile = async (providerId, profileData) => {
 };
 
 export const createOrder = async (customerId, providerId, details) => {
-  const price = Number(details.price) || 100;
+  const price = Number(details.price) || 0; // Removed hardcoded 100 ILS
   const commission = Math.round(price * 0.15); // Single source of truth 15% platform commission
 
   const orderRef = await addDoc(collection(db, 'orders'), {
@@ -87,10 +87,10 @@ export const updateOrderStatus = async (orderId, newStatus, currentStatus = null
     let title = 'Order Update';
     let body = `Your order status changed to ${newStatus}.`;
     if (newStatus === 'approved') {
-      title = 'ג… Order Confirmed!';
+      title = '✅ Order Confirmed!';
       body = 'Your provider has accepted the booking and is preparing for dispatch.';
     } else if (newStatus === 'completed') {
-      title = 'נ‰ Service Completed!';
+      title = '🎉 Service Completed!';
       body = 'Your service is complete. Please rate your experience!';
     } else if (newStatus === 'declined' || newStatus === 'cancelled') {
       title = 'Order Cancelled';
@@ -111,11 +111,11 @@ export const updateOrderStatus = async (orderId, newStatus, currentStatus = null
 export const updateProviderLocation = async (orderId, locationData) => {
   const orderRef = doc(db, 'orders', orderId);
   const locPayload = {
-    lat: Number(locationData.lat) || 32.0711,
-    lng: Number(locationData.lng) || 34.7871,
+    lat: Number(locationData.lat) || 0, // Removed hardcoded Tel Aviv lat
+    lng: Number(locationData.lng) || 0, // Removed hardcoded Tel Aviv lng
     address: locationData.address || 'En Route Location',
     heading: locationData.heading || 0,
-    speed: locationData.speed || '25 km/h',
+    speed: locationData.speed || '0 km/h', // Removed hardcoded 25 km/h
     updatedAt: new Date().toISOString()
   };
   await updateDoc(orderRef, {
@@ -185,7 +185,7 @@ export const submitOrderReview = async (orderId, providerId, rating, comment, cu
     const existingReviews = data.reviews || [];
     const updatedReviews = [newReview, ...existingReviews];
     
-    const totalRating = updatedReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0);
+    const totalRating = updatedReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0); // Removed hardcoded 5 stars
     const avgRating = Number((totalRating / updatedReviews.length).toFixed(2));
 
     await updateDoc(providerRef, {

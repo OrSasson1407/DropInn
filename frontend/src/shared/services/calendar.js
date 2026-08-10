@@ -1,16 +1,21 @@
-// Helper utility for Google Calendar API integration & iCal (.ics) file generation
+﻿// Helper utility for Google Calendar API integration & iCal (.ics) file generation
 
 /**
  * Generates an .ics file download for a booking/order
  */
 export const downloadICalFile = (order) => {
-  const title = `DropIn Haircut Booking #${(order.id || 'booking').substring(0, 8)}`;
-  const description = `DropIn Mobile Barber Appointment at ${order.address || 'Client Address'}. Total: ${order.price || 100} ILS.`;
-  const location = order.address || 'Tel Aviv, Israel';
+  const serviceName = order.serviceName || order.category || 'Service';
+  const title = `DropInn Booking: ${serviceName} #${(order.id || 'booking').substring(0, 8)}`;
+  const description = `DropInn Appointment at ${order.address || 'Client Address'}. Total: ${order.price || 0} ILS.`;
+  const location = order.address || 'Unspecified Location';
   
   const now = new Date();
-  const startTime = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
-  const endTime = new Date(startTime.getTime() + 45 * 60 * 1000); // 45 min duration
+  // Support both Firestore Timestamps and standard ISO dates
+  const startTime = order.createdAt?.toDate ? order.createdAt.toDate() : (order.startTime ? new Date(order.startTime) : new Date());
+  
+  // Dynamically pull duration from the order, default to 60 mins
+  const durationMinutes = order.duration || 60;
+  const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
 
   const formatDate = (date) => {
     return date.toISOString().replace(/-|:|\.\d+/g, '');
@@ -19,7 +24,7 @@ export const downloadICalFile = (order) => {
   const icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//DropIn Mobile Barbers//Booking Sync//EN',
+    'PRODID:-//DropInn//Booking Sync//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:REQUEST',
     'BEGIN:VEVENT',
@@ -48,13 +53,16 @@ export const downloadICalFile = (order) => {
  * Adds an event to Google Calendar via Google Calendar API or Direct Web Link
  */
 export const syncWithGoogleCalendar = async (order, accessToken = null) => {
-  const startTime = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
-  const endTime = new Date(startTime.getTime() + 45 * 60 * 1000);
+  const serviceName = order.serviceName || order.category || 'Service';
+  const startTime = order.createdAt?.toDate ? order.createdAt.toDate() : (order.startTime ? new Date(order.startTime) : new Date());
+  
+  const durationMinutes = order.duration || 60;
+  const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
 
   const eventPayload = {
-    summary: `DropIn Mobile Haircut #${(order.id || '').substring(0, 8)}`,
-    location: order.address || 'Tel Aviv, Israel',
-    description: `DropIn Barber Appointment. Total: ${order.price || 100} ILS. Customer Address: ${order.address || 'On-location'}`,
+    summary: `DropInn: ${serviceName} #${(order.id || '').substring(0, 8)}`,
+    location: order.address || 'Unspecified Location',
+    description: `DropInn Appointment. Total: ${order.price || 0} ILS. Customer Address: ${order.address || 'On-location'}`,
     start: {
       dateTime: startTime.toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jerusalem'

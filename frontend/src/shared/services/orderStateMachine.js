@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DropIn Order State Machine & Pricing Module
  * Decoupled from React DOM specifics for seamless React Native reuse (Pillar 6 Groundwork)
  */
@@ -32,8 +32,17 @@ export function canTransitionOrder(currentState, nextState) {
 /**
  * Bounded Dynamic/Surge Pricing Calculation (Pillar 4)
  * Hard-capped at 1.5x surge multiplier to preserve brand trust
+ * 
+ * Now fully dynamic to support custom provider rates and global commission configs.
  */
-export function calculateDynamicPrice(basePrice, demandFactor = 1.0, distanceKm = 0) {
+export function calculateDynamicPrice(
+  basePrice, 
+  demandFactor = 1.0, 
+  distanceKm = 0, 
+  travelRatePerKm = 3, // Dynamic fallback
+  freeTravelRadius = 5, // Dynamic fallback
+  commissionRate = 0.15 // Dynamic fallback
+) {
   if (basePrice <= 0) {
     return {
       basePrice: 0,
@@ -49,11 +58,11 @@ export function calculateDynamicPrice(basePrice, demandFactor = 1.0, distanceKm 
   // Cap surge multiplier between 1.0x and 1.5x max
   const boundedSurge = Math.min(1.5, Math.max(1.0, demandFactor));
   
-  // Distance travel surcharge: 3 ILS per km beyond 5km base
-  const travelSurcharge = distanceKm > 5 ? Math.round((distanceKm - 5) * 3) : 0;
+  // Dynamic travel surcharge based on provider/category rules
+  const travelSurcharge = distanceKm > freeTravelRadius ? Math.round((distanceKm - freeTravelRadius) * travelRatePerKm) : 0;
   
   const subtotal = Math.round(basePrice * boundedSurge) + travelSurcharge;
-  const platformCommission = Math.round(subtotal * 0.15); // Single source 15% commission rule
+  const platformCommission = Math.round(subtotal * commissionRate); 
   const providerEarnings = subtotal - platformCommission;
 
   return {

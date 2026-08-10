@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createOrder, updateOrderStatus, submitOrderReview } from '../../shared/services/firestore';
 
 vi.mock('../../firebase', () => ({
@@ -105,3 +105,4 @@ describe('Full Order & Provider Lifecycle Integration Flow', () => {
     expect(mockProviders.p1.isApproved).toBe(true);
   });
 });
+

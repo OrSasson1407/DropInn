@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { signup, loginWithGoogle } from '../../shared/services/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../../firebase';
@@ -247,7 +247,7 @@ export default function ProviderSignup() {
               </span>
               {docFileName && (
                 <span className="text-[10px] text-emerald-400 font-mono font-bold truncate max-w-[120px]">
-                  ג“ {docFileName}
+                  ׳’ֲג€ {docFileName}
                 </span>
               )}
             </div>
@@ -281,4 +281,5 @@ export default function ProviderSignup() {
     </div>
   );
 }
+
 

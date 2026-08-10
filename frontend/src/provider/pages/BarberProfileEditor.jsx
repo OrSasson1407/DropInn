@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
@@ -325,7 +325,7 @@ export default function BarberProfileEditor() {
             </p>
             {!hasSetBaseLocation && (
               <p className="text-xs text-amber-400 mt-1">
-                You haven't pinned a real base location yet — defaulting to Tel Aviv center. Pin the map below and save to update it.
+                You haven't pinned a real base location yet ג€” defaulting to Tel Aviv center. Pin the map below and save to update it.
               </p>
             )}
           </div>
