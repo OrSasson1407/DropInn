@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { setProviderAvailability } from '../../shared/services/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
@@ -6,9 +8,23 @@ import { Radio, Power, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function AvailabilityToggle() {
   const [isAvailable, setIsAvailable] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(true);
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLoadingStatus(false);
+      return;
+    }
+    getDoc(doc(db, 'providers', currentUser.uid))
+      .then((snap) => {
+        setIsAvailable(Boolean(snap.data()?.isAvailable));
+      })
+      .catch((e) => console.error('Failed to load availability status:', e))
+      .finally(() => setLoadingStatus(false));
+  }, [currentUser]);
 
   const toggle = async () => {
     const newVal = !isAvailable;
@@ -24,6 +40,7 @@ export default function AvailabilityToggle() {
         }
       } catch (e) {
         console.error(e);
+        setIsAvailable(!newVal);
         toast.error('Failed to update availability status', 'Network Error');
       } finally {
         setLoading(false);
@@ -49,8 +66,8 @@ export default function AvailabilityToggle() {
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dispatch Mode</span>
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <span>{isAvailable ? 'Online & Available' : 'Offline'}</span>
-              {isAvailable && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />}
+              <span>{loadingStatus ? 'Loading...' : (isAvailable ? 'Online & Available' : 'Offline')}</span>
+              {isAvailable && !loadingStatus && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />}
             </h3>
           </div>
         </div>
@@ -64,7 +81,7 @@ export default function AvailabilityToggle() {
 
       <button
         onClick={toggle}
-        disabled={loading}
+        disabled={loading || loadingStatus}
         className={`w-full py-4 rounded-2xl font-black text-sm shadow-xl transition-all flex items-center justify-center gap-2 transform active:scale-95 ${
           isAvailable
             ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30'
