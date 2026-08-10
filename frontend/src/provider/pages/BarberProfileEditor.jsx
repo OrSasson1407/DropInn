@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { SERVICE_CATEGORIES, CATEGORY_GROUPS } from '../../shared/services/categories';
 import ProviderVerificationUpload from './ProviderVerificationUpload';
+import MapContainer from '../../shared/components/MapContainer';
 
 const CATEGORY_OPTIONS = [
   'Men\'s Haircuts & Beard',
@@ -43,6 +44,14 @@ export default function BarberProfileEditor() {
   const [specialties, setSpecialties] = useState([]);
   const [portfolio, setPortfolio] = useState([]);
 
+  // Real service base location & coverage radius - drives which customers
+  // can find/book this provider and what ServiceCoverageMap shows for them.
+  // Defaults to Tel Aviv center only until the provider pins their actual base.
+  const [baseLocation, setBaseLocation] = useState({ lat: 32.0711, lng: 34.7871 });
+  const [coverageRadiusKm, setCoverageRadiusKm] = useState(10);
+  const [baseLocationName, setBaseLocationName] = useState('Tel Aviv Metropolitan Central Hub');
+  const [hasSetBaseLocation, setHasSetBaseLocation] = useState(false);
+
   // Provider ID Document verification state
   const [idDocumentSubmitted, setIdDocumentSubmitted] = useState(false);
   const [idDocumentUrl, setIdDocumentUrl] = useState('');
@@ -69,6 +78,16 @@ export default function BarberProfileEditor() {
           setPortfolio(data.portfolio || []);
           setIdDocumentSubmitted(!!data.idDocumentSubmitted);
           setIdDocumentUrl(data.idDocumentUrl || '');
+          if (data.baseLocation && typeof data.baseLocation.lat === 'number' && typeof data.baseLocation.lng === 'number') {
+            setBaseLocation(data.baseLocation);
+            setHasSetBaseLocation(true);
+          }
+          if (typeof data.coverageRadiusKm === 'number') {
+            setCoverageRadiusKm(data.coverageRadiusKm);
+          }
+          if (data.baseLocationName) {
+            setBaseLocationName(data.baseLocationName);
+          }
         } else {
           setName(currentUser.displayName || 'Pro Specialist');
         }
@@ -99,7 +118,10 @@ export default function BarberProfileEditor() {
         portfolio,
         idDocumentSubmitted,
         idDocumentUrl,
-        verificationStatus: idDocumentSubmitted ? 'pending_review' : 'unverified'
+        verificationStatus: idDocumentSubmitted ? 'pending_review' : 'unverified',
+        baseLocation,
+        coverageRadiusKm,
+        baseLocationName
       });
       setSavedSuccess(true);
       toast.success('Your profile & portfolio changes have been saved!', 'Profile Updated');
@@ -291,6 +313,34 @@ export default function BarberProfileEditor() {
 
         {/* Government ID & License Verification Upload Component */}
         <ProviderVerificationUpload />
+
+        {/* Real Service Base Location & Coverage Radius */}
+        <div className="space-y-3 pt-4 border-t border-slate-800">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>Service Base Location & Coverage Radius</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Pin where you dispatch from and set how far you'll travel. Customers browsing near your coverage area will see you as available.
+            </p>
+            {!hasSetBaseLocation && (
+              <p className="text-xs text-amber-400 mt-1">
+                You haven't pinned a real base location yet — defaulting to Tel Aviv center. Pin the map below and save to update it.
+              </p>
+            )}
+          </div>
+          <MapContainer
+            center={baseLocation}
+            defaultRadiusKm={coverageRadiusKm}
+            title="Your Service Base Location"
+            onPinCoverage={({ center, radiusKm, name }) => {
+              setBaseLocation(center);
+              setCoverageRadiusKm(radiusKm);
+              setBaseLocationName(name);
+              setHasSetBaseLocation(true);
+            }}
+          />
+        </div>
 
         {/* Portfolio Gallery Manager */}
         <div className="space-y-4 pt-4 border-t border-slate-800">

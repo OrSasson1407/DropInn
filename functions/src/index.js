@@ -197,6 +197,101 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Helper: resolve whether the calling user is allowed to act as an admin.
+ * Mirrors the isAdmin() logic already used in firestore.rules, so authorization
+ * behaves consistently between client-side rules and server-side callables.
+ */
+async function callerIsAdmin(db, uid, email) {
+  if (email === 'orsasson140701@gmail.com' || email === 'admin@dropinn.com') return true;
+  const userSnap = await db.collection('users').doc(uid).get();
+  return userSnap.exists && userSnap.data().role === 'admin';
+}
+
+/**
+ * Issues a REAL Stripe refund for a payment and marks it 'refund_requested'.
+ * The refund is only considered final ('refunded') once Stripe confirms it
+ * via the 'charge.refunded' webhook event below - never on the client's say-so.
+ *
+ * Callable function: invoked from the frontend via httpsCallable(functions, 'refundPayment')
+ */
+exports.refundPayment = functions.https.onCall(async (data, context) => {
+  if (!stripe) {
+    throw new functions.https.HttpsError('failed-precondition', 'Stripe is not configured on the server (missing STRIPE_SECRET_KEY).');
+  }
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to request a refund.');
+  }
+
+  const { paymentId, orderId, reason } = data || {};
+  if (!paymentId && !orderId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Either paymentId or orderId is required.');
+  }
+
+  const db = admin.firestore();
+  const callerUid = context.auth.uid;
+  const callerEmail = context.auth.token.email || null;
+
+  let paymentSnap;
+  if (paymentId) {
+    paymentSnap = await db.collection('payments').doc(paymentId).get();
+  } else {
+    const q = await db.collection('payments').where('orderId', '==', orderId).limit(1).get();
+    paymentSnap = q.empty ? null : q.docs[0];
+  }
+
+  if (!paymentSnap || !paymentSnap.exists) {
+    throw new functions.https.HttpsError('not-found', 'Payment record not found.');
+  }
+  const paymentData = paymentSnap.data();
+  const paymentRef = paymentSnap.ref;
+
+  const isOwner = paymentData.customerId === callerUid;
+  const isAdmin = await callerIsAdmin(db, callerUid, callerEmail);
+  if (!isOwner && !isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'You are not allowed to refund this payment.');
+  }
+
+  if (paymentData.status !== 'succeeded') {
+    throw new functions.https.HttpsError('failed-precondition', `Only a succeeded payment can be refunded (current status: ${paymentData.status}).`);
+  }
+  if (!paymentData.stripePaymentIntentId) {
+    throw new functions.https.HttpsError('failed-precondition', 'This payment has no associated Stripe PaymentIntent.');
+  }
+
+  const refund = await stripe.refunds.create({
+    payment_intent: paymentData.stripePaymentIntentId,
+    reason: 'requested_by_customer',
+    metadata: {
+      paymentId: paymentRef.id,
+      orderId: paymentData.orderId || orderId || '',
+      requestedBy: callerUid
+    }
+  });
+
+  await paymentRef.update({
+    status: 'refund_requested',
+    stripeRefundId: refund.id,
+    refundReason: reason || 'Order cancelled',
+    refundRequestedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  if (paymentData.orderId) {
+    await db.collection('orders').doc(paymentData.orderId).set({
+      status: 'cancelled',
+      paymentStatus: 'REFUND_REQUESTED',
+      cancellationReason: reason || 'Order cancelled',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+
+  return {
+    success: true,
+    refundId: refund.id,
+    status: refund.status
+  };
+});
+
+/**
  * Stripe webhook endpoint. This is the ONLY place a payment is ever marked
  * 'succeeded' or 'failed' - the frontend cannot do this itself. Stripe signs
  * every request with STRIPE_WEBHOOK_SECRET so we can verify it really came
@@ -270,6 +365,37 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
         }
       } else {
         console.warn('Stripe webhook: no matching payment doc for PaymentIntent', intent.id);
+      }
+    }
+
+    if (event.type === 'charge.refunded') {
+      const charge = event.data.object;
+      const intentId = charge.payment_intent;
+
+      const paymentsQuery = await db.collection('payments')
+        .where('stripePaymentIntentId', '==', intentId)
+        .limit(1)
+        .get();
+
+      if (!paymentsQuery.empty) {
+        const paymentDoc = paymentsQuery.docs[0];
+        const paymentData = paymentDoc.data();
+        const fullyRefunded = charge.amount_refunded >= charge.amount;
+
+        await paymentDoc.ref.update({
+          status: fullyRefunded ? 'refunded' : 'partially_refunded',
+          amountRefunded: charge.amount_refunded / 100,
+          refundConfirmedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        if (paymentData.orderId) {
+          await db.collection('orders').doc(paymentData.orderId).set({
+            paymentStatus: fullyRefunded ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        }
+      } else {
+        console.warn('Stripe webhook: no matching payment doc for refunded PaymentIntent', intentId);
       }
     }
 
