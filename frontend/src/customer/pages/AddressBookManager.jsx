@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { MapPin, Plus, Trash2, CheckCircle2, Building, Home, Briefcase, Hotel, Navigation, Key, Shield } from 'lucide-react';
 import { useToast } from '../../shared/context/ToastContext';
 
@@ -9,28 +9,7 @@ export default function AddressBookManager() {
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* ignore */ }
     }
-    return [
-      {
-        id: 'addr_1',
-        title: 'Home Apartment',
-        type: 'home',
-        address: 'Rothschild Blvd 45, Tel Aviv',
-        apt: 'Apt 4B, Floor 4',
-        intercomCode: '1234#',
-        parkingNotes: 'Underground parking space #12 available for specialist',
-        isDefault: true
-      },
-      {
-        id: 'addr_2',
-        title: 'Office HQ',
-        type: 'office',
-        address: 'HaArba\'a St 28, Tel Aviv',
-        apt: 'Tower B, Floor 18',
-        intercomCode: 'Press Security',
-        parkingNotes: 'Guest parking available in basement level -2',
-        isDefault: false
-      }
-    ];
+    return []; // Removed mock data
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -94,7 +73,6 @@ export default function AddressBookManager() {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -115,91 +93,90 @@ export default function AddressBookManager() {
         </button>
       </div>
 
-      {/* Address Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {addresses.map((addr) => {
-          const IconComponent = getTypeIcon(addr.type);
-
-          return (
-            <div
-              key={addr.id}
-              className={`relative bg-slate-900/90 border rounded-3xl p-6 space-y-4 transition-all shadow-xl ${
-                addr.isDefault
-                  ? 'border-amber-500/80 ring-1 ring-amber-500/40 bg-gradient-to-b from-amber-500/5 to-transparent'
-                  : 'border-slate-800 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
-                    <IconComponent className="w-5 h-5" />
+      {addresses.length === 0 ? (
+        <div className="text-center py-12 text-slate-500 text-sm">
+          No addresses saved yet. Add your first location to speed up future bookings.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {addresses.map((addr) => {
+            const IconComponent = getTypeIcon(addr.type);
+            return (
+              <div
+                key={addr.id}
+                className={`relative bg-slate-900/90 border rounded-3xl p-6 space-y-4 transition-all shadow-xl ${
+                  addr.isDefault
+                    ? 'border-amber-500/80 ring-1 ring-amber-500/40 bg-gradient-to-b from-amber-500/5 to-transparent'
+                    : 'border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                        <span>{addr.title}</span>
+                        {addr.isDefault && (
+                          <span className="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full font-black uppercase">
+                            DEFAULT
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-mono mt-0.5">{addr.address}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                      <span>{addr.title}</span>
-                      {addr.isDefault && (
-                        <span className="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full font-black uppercase">
-                          DEFAULT
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-slate-400 font-mono mt-0.5">{addr.address}</p>
-                  </div>
+                  <button
+                    onClick={() => handleDelete(addr.id)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                    title="Delete address"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => handleDelete(addr.id)}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                  title="Delete address"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 space-y-2 text-xs">
+                  {addr.apt && (
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span className="text-slate-500">Unit / Apt:</span>
+                      <span className="font-semibold text-white">{addr.apt}</span>
+                    </div>
+                  )}
+                  {addr.intercomCode && (
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span className="text-slate-500 flex items-center gap-1">
+                        <Key className="w-3 h-3 text-amber-400" />
+                        Intercom Code:
+                      </span>
+                      <span className="font-mono font-bold text-amber-400">{addr.intercomCode}</span>
+                    </div>
+                  )}
+                  {addr.parkingNotes && (
+                    <div className="pt-1 border-t border-slate-900 text-slate-400 text-[11px] leading-relaxed">
+                      <strong className="text-slate-300">Parking / Access:</strong> {addr.parkingNotes}
+                    </div>
+                  )}
+                </div>
+
+                {!addr.isDefault && (
+                  <button
+                    onClick={() => handleSetDefault(addr.id)}
+                    className="w-full py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-all"
+                  >
+                    Set as Default Address
+                  </button>
+                )}
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {/* Door Code & Notes */}
-              <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 space-y-2 text-xs">
-                {addr.apt && (
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span className="text-slate-500">Unit / Apt:</span>
-                    <span className="font-semibold text-white">{addr.apt}</span>
-                  </div>
-                )}
-                {addr.intercomCode && (
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span className="text-slate-500 flex items-center gap-1">
-                      <Key className="w-3 h-3 text-amber-400" />
-                      Intercom Code:
-                    </span>
-                    <span className="font-mono font-bold text-amber-400">{addr.intercomCode}</span>
-                  </div>
-                )}
-                {addr.parkingNotes && (
-                  <div className="pt-1 border-t border-slate-900 text-slate-400 text-[11px] leading-relaxed">
-                    <strong className="text-slate-300">Parking / Access:</strong> {addr.parkingNotes}
-                  </div>
-                )}
-              </div>
-
-              {/* Set Default Button */}
-              {!addr.isDefault && (
-                <button
-                  onClick={() => handleSetDefault(addr.id)}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-all"
-                >
-                  Set as Default Address
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Add Address Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fadeIn">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
             <h3 className="text-lg font-black text-white">Add Delivery Address</h3>
-
             <form onSubmit={handleAddAddress} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-300 mb-1">Label Name (e.g. Home, Beach House)</label>
@@ -211,7 +188,6 @@ export default function AddressBookManager() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                 />
               </div>
-
               <div>
                 <label className="block font-bold text-slate-300 mb-1">Street Address</label>
                 <input
@@ -223,7 +199,6 @@ export default function AddressBookManager() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-300 mb-1">Apt / Floor / Door</label>
@@ -246,7 +221,6 @@ export default function AddressBookManager() {
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block font-bold text-slate-300 mb-1">Parking / Entrance Notes</label>
                 <textarea
@@ -257,7 +231,6 @@ export default function AddressBookManager() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                 />
               </div>
-
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
