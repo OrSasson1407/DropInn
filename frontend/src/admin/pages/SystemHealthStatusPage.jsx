@@ -1,91 +1,104 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Server, Database, Radio, ShieldCheck, CheckCircle2, Clock, Cpu, RefreshCw, AlertTriangle, Zap, Bell, CheckCircle } from 'lucide-react';
-import { captureException, captureMessage, checkCloudFunctionsUptime, CRITICAL_CLOUD_FUNCTIONS } from '../../shared/services/sentry';
+import { Activity, Database, ShieldCheck, Clock, Cpu, RefreshCw, AlertTriangle, Zap, ExternalLink } from 'lucide-react';
+import { captureException, captureMessage } from '../../shared/services/sentry';
+import { db } from '../../firebase';
+import { doc, getDocFromServer } from 'firebase/firestore';
 import { useToast } from '../../shared/context/ToastContext';
+
+const EXTERNAL_DASHBOARDS = [
+  { name: 'Firebase Console', url: 'https://console.firebase.google.com/', detail: 'Firestore, Auth, Storage, Cloud Functions' },
+  { name: 'Stripe Dashboard', url: 'https://dashboard.stripe.com/', detail: 'Payments, refunds, webhook delivery logs' },
+  { name: 'Google Cloud Console', url: 'https://console.cloud.google.com/', detail: 'Maps/Distance Matrix API quota & billing' },
+];
 
 export default function SystemHealthStatusPage() {
   const { toast } = useToast();
-  const [metrics, setMetrics] = useState({
-    apiStatus: 'Operational',
-    dbStatus: 'Operational (PostgreSQL + PostGIS)',
-    wsStatus: 'Operational (Socket.io)',
-    redisStatus: 'Operational (BullMQ Queue)',
-    mapsStatus: 'Operational (Google Maps Distance Matrix API)',
-    stripeStatus: 'Operational (Stripe Escrow & Payouts)',
-    latencyMs: 18,
-    uptimePercent: 99.98
-  });
+  const [checking, setChecking] = useState(false);
+  const [firestoreStatus, setFirestoreStatus] = useState(null);
 
-  const [lastCheckTime, setLastCheckTime] = useState(new Date().toLocaleTimeString());
-  const [functionHealth, setFunctionHealth] = useState([]);
-  const [checkingFunctions, setCheckingFunctions] = useState(false);
-
-  const loadFunctionUptime = async () => {
-    setCheckingFunctions(true);
+  const checkFirestore = async () => {
+    setChecking(true);
+    const start = performance.now();
     try {
-      const res = await checkCloudFunctionsUptime();
-      setFunctionHealth(res.functions || []);
+      await getDocFromServer(doc(db, 'categories', '__health_check__'));
+      setFirestoreStatus({ ok: true, latencyMs: Math.round(performance.now() - start), checkedAt: new Date() });
     } catch (err) {
-      captureException(err, { tags: { module: 'UptimeMonitor' } });
+      if (err?.code === 'not-found' || err?.code === 'firestore/not-found') {
+        setFirestoreStatus({ ok: true, latencyMs: Math.round(performance.now() - start), checkedAt: new Date() });
+      } else {
+        setFirestoreStatus({ ok: false, latencyMs: null, checkedAt: new Date() });
+        captureException(err, { tags: { module: 'SystemHealthCheck' } });
+      }
     } finally {
-      setCheckingFunctions(false);
+      setChecking(false);
     }
   };
 
   useEffect(() => {
-    loadFunctionUptime();
+    checkFirestore();
   }, []);
 
-  const refreshStatus = () => {
-    setLastCheckTime(new Date().toLocaleTimeString());
-    setMetrics(prev => ({
-      ...prev,
-      latencyMs: Math.floor(Math.random() * 10) + 14
-    }));
-    loadFunctionUptime();
-  };
-
   const handleTestSentryAlert = () => {
-    const testErr = new Error('TEST: Sentry Production Error Exception Triggered from System Dashboard');
+    const testErr = new Error('TEST: Sentry error triggered manually from System Dashboard');
     captureException(testErr, {
-      tags: { source: 'AdminTestTrigger', severity: 'Critical' },
+      tags: { source: 'AdminTestTrigger', severity: 'test' },
       extra: { timestamp: new Date().toISOString(), userRole: 'admin' }
     });
-    captureMessage('Sentry Uptime Alert Test Event Logged', 'warning', { component: 'SystemHealthStatusPage' });
-    toast.success('Test error & warning log transmitted to Sentry SDK!', 'Sentry Alert Sent');
+    captureMessage('Sentry test event logged from System Health page', 'warning', { component: 'SystemHealthStatusPage' });
+    toast.success('Test error & warning sent to Sentry (if VITE_SENTRY_DSN is configured).', 'Sentry Alert Sent');
   };
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-3">
         <div className="flex items-center justify-between">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase">
             <Activity className="w-3.5 h-3.5" />
-            <span>Platform System Health & Sentry (#50)</span>
+            <span>System Health</span>
           </div>
           <button
-            onClick={refreshStatus}
+            onClick={checkFirestore}
             className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 transition-all"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${checkingFunctions ? 'animate-spin' : ''}`} />
-            <span>Re-Check Systems</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${checking ? 'animate-spin' : ''}`} />
+            <span>Re-Check</span>
           </button>
         </div>
-        
-        <h1 className="text-3xl font-black text-white">DropIn V3.0 Operational Status</h1>
-        <p className="text-xs text-slate-400">
-          Real-time health status of database clusters, real-time WebSocket dispatch nodes, PostGIS spatial query engine, external payment webhooks, and Sentry Cloud Function error tracking.
-        </p>
 
-        <div className="flex items-center gap-4 text-xs font-mono pt-2 border-t border-slate-800 text-slate-400">
-          <span>Overall Uptime: <strong className="text-emerald-400">{metrics.uptimePercent}%</strong></span>
-          <span>API Latency: <strong className="text-amber-400">{metrics.latencyMs}ms</strong></span>
-          <span>Last Check: <strong className="text-slate-200">{lastCheckTime}</strong></span>
-        </div>
+        <h1 className="text-3xl font-black text-white">DropIn Operational Status</h1>
+        <p className="text-xs text-slate-400">
+          Live connectivity check against Firestore. Other services (Stripe, Cloud Functions, Maps API)
+          don't have a dedicated health-check endpoint yet - use the real dashboards below to check them directly.
+        </p>
       </div>
 
-      {/* Sentry Integration & Uptime Alerting Monitor */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-amber-400">
+              <Database className="w-4 h-4" />
+            </div>
+            <h3 className="text-xs font-extrabold text-white">Firestore Database</h3>
+          </div>
+          {firestoreStatus === null ? (
+            <span className="text-[10px] text-slate-500 font-mono">Checking...</span>
+          ) : firestoreStatus.ok ? (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase">
+              <ShieldCheck className="w-3 h-3" />
+              <span>Reachable - {firestoreStatus.latencyMs}ms</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-black uppercase">
+              <AlertTriangle className="w-3 h-3" />
+              <span>Unreachable</span>
+            </span>
+          )}
+        </div>
+        {firestoreStatus?.checkedAt && (
+          <p className="text-[11px] font-mono text-slate-500">Last checked: {firestoreStatus.checkedAt.toLocaleTimeString()}</p>
+        )}
+      </div>
+
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -93,11 +106,10 @@ export default function SystemHealthStatusPage() {
               <Zap className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white">Sentry Production Error Tracking & Uptime Alerting</h2>
-              <p className="text-xs text-slate-400">Active Monitoring for Cloud Functions & Production Exception Logging</p>
+              <h2 className="text-base font-extrabold text-white">Sentry Error Tracking</h2>
+              <p className="text-xs text-slate-400">Sends a real test event if VITE_SENTRY_DSN is configured</p>
             </div>
           </div>
-
           <button
             onClick={handleTestSentryAlert}
             className="px-3.5 py-2 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 shadow-md"
@@ -106,59 +118,28 @@ export default function SystemHealthStatusPage() {
             <span>Test Sentry Alert</span>
           </button>
         </div>
-
-        {/* Critical Cloud Functions Uptime Grid */}
-        <div className="space-y-2 pt-2 border-t border-slate-800/80">
-          <h3 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider">Critical Cloud Functions SLA Monitor</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(functionHealth.length > 0 ? functionHealth : CRITICAL_CLOUD_FUNCTIONS).map((fn, idx) => (
-              <div key={fn.id || idx} className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-xs font-bold text-white">{fn.name}</h4>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
-                    <span>Region: {fn.region || 'europe-west2'}</span>
-                    <span>• SLA Target: {fn.expectedSla || '99.9%'}</span>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>Operational</span>
-                  </span>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1">{fn.latencyMs || 18}ms ping</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Services Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          { name: 'Node.js REST API & Cloud Run', status: metrics.apiStatus, icon: Server, detail: '100% Deterministic Rule Engine' },
-          { name: 'PostgreSQL + PostGIS GeoDB', status: metrics.dbStatus, icon: Database, detail: 'ST_Contains Spatial Polygon Query Engine' },
-          { name: 'Socket.io WebSocket Server', status: metrics.wsStatus, icon: Radio, detail: 'Live Dispatch & SOS Telemetry Pub/Sub' },
-          { name: 'BullMQ & Redis Workers', status: metrics.redisStatus, icon: Cpu, detail: 'Dynamic Yield Matrix & Schedule Workers' },
-          { name: 'Google Distance Matrix API', status: metrics.mapsStatus, icon: Clock, detail: 'Dynamic Traffic Buffer Expansion Engine' },
-          { name: 'Stripe Escrow & Split-Pay', status: metrics.stripeStatus, icon: ShieldCheck, detail: 'Escrow Security Deposit & Payout Webhooks' }
-        ].map((s, idx) => (
-          <div key={idx} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+        {EXTERNAL_DASHBOARDS.map((d, idx) => (
+          
+            key={idx}
+            href={d.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 space-y-2 shadow-lg transition-all block"
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-amber-400">
-                  <s.icon className="w-4 h-4" />
+                  <Cpu className="w-4 h-4" />
                 </div>
-                <h3 className="text-xs font-extrabold text-white">{s.name}</h3>
+                <h3 className="text-xs font-extrabold text-white">{d.name}</h3>
               </div>
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                <span>Operational</span>
-              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
             </div>
-            <p className="text-[11px] font-mono text-slate-400 border-t border-slate-950 pt-2">{s.detail}</p>
-          </div>
+            <p className="text-[11px] font-mono text-slate-400 border-t border-slate-950 pt-2">{d.detail}</p>
+          </a>
         ))}
       </div>
     </div>

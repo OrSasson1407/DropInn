@@ -1,20 +1,30 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return isSignedIn() &&
+        (request.auth.token.email == 'orsasson140701@gmail.com' || request.auth.token.email == 'admin@dropinn.com');
+    }
+
     // Provider ID documents & portfolio assets
     match /providers/{providerId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.uid == providerId || request.auth.token.email == 'orsasson140701@gmail.com');
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == providerId || isAdmin());
     }
-    // User profile images
+
+    // User profile images: owner or admin only (not every signed-in user)
     match /users/{userId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
-    // Default fallback
+
+    // Default fallback: deny by default, admin only
     match /{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'orsasson140701@gmail.com';
+      allow read, write: if isAdmin();
     }
   }
 }
