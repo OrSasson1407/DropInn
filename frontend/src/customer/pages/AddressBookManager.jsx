@@ -1,16 +1,22 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { MapPin, Plus, Trash2, CheckCircle2, Building, Home, Briefcase, Hotel, Navigation, Key, Shield } from 'lucide-react';
 import { useToast } from '../../shared/context/ToastContext';
+import { useAuth } from '../../shared/context/AuthContext';
+import { getSavedAddresses, saveAddressesList } from '../../shared/services/firestore';
 
 export default function AddressBookManager() {
   const { toast } = useToast();
-  const [addresses, setAddresses] = useState(() => {
-    const saved = localStorage.getItem('dropin_saved_addresses');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-    }
-    return []; // Removed mock data
-  });
+  const { currentUser } = useAuth();
+  const [addresses, setAddresses] = useState([]);
+  const [addressesLoaded, setAddressesLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) { setAddresses([]); setAddressesLoaded(true); return; }
+    getSavedAddresses(currentUser.uid).then((list) => {
+      setAddresses(list);
+      setAddressesLoaded(true);
+    });
+  }, [currentUser]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,8 +29,9 @@ export default function AddressBookManager() {
   });
 
   useEffect(() => {
-    localStorage.setItem('dropin_saved_addresses', JSON.stringify(addresses));
-  }, [addresses]);
+    if (!currentUser || !addressesLoaded) return;
+    saveAddressesList(currentUser.uid, addresses);
+  }, [addresses, currentUser, addressesLoaded]);
 
   const handleSetDefault = (id) => {
     setAddresses((prev) =>

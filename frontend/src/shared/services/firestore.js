@@ -207,3 +207,25 @@ export const sendNotification = async (recipientId, { title, body, type = 'GENER
     createdAt: serverTimestamp()
   });
 };
+
+export const getSavedAddresses = async (userId) => {
+  if (!userId) return [];
+  const snap = await getDoc(doc(db, 'users', userId));
+  return snap.exists() ? (snap.data().savedAddresses || []) : [];
+};
+
+export const saveAddressesList = async (userId, addresses) => {
+  if (!userId) return;
+  await setDoc(doc(db, 'users', userId), { savedAddresses: addresses }, { merge: true });
+};
+
+export const getSavedAddresses = async (userId) => {
+  if (!userId) return [];
+  const snap = await getDoc(doc(db, 'users', userId));
+  return snap.exists() ? (snap.data().savedAddresses || []) : [];
+};
+
+export const saveAddressesList = async (userId, addresses) => {
+  if (!userId) return;
+  await setDoc(doc(db, 'users', userId), { savedAddresses: addresses }, { merge: true });
+};

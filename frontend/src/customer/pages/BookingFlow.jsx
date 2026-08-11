@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { createOrder } from '../../shared/services/firestore';
+import { createOrder, getSavedAddresses, saveAddressesList } from '../../shared/services/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
 import { getStripe, createPaymentIntentForOrder } from '../../shared/services/payments';
@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { ADDONS_BY_CATEGORY } from '../../shared/services/categories';
 
-const SAVED_ADDRESSES_KEY = 'dropin_saved_addresses';
 
 function getAddressTypeIcon(type) {
   switch (type) {
@@ -81,10 +80,8 @@ export default function BookingFlow() {
 
   // Load saved addresses and auto-fill the default one, if any
   useEffect(() => {
-    const saved = localStorage.getItem(SAVED_ADDRESSES_KEY);
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
+    if (!currentUser) return;
+    getSavedAddresses(currentUser.uid).then((parsed) => {
       setSavedAddresses(parsed);
       const defaultAddr = parsed.find((a) => a.isDefault) || parsed[0];
       if (defaultAddr) {
@@ -92,8 +89,8 @@ export default function BookingFlow() {
         setNotes(buildNotesFromSavedAddress(defaultAddr));
         setAddressSource('saved');
       }
-    } catch (e) { /* ignore */ }
-  }, []);
+    });
+  }, [currentUser]);
 
   const handleSelectSavedAddress = (addr) => {
     setAddress(formatSavedAddress(addr));
@@ -179,7 +176,7 @@ export default function BookingFlow() {
         isDefault: savedAddresses.length === 0
       };
       const updated = [...savedAddresses, newAddr];
-      localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(updated));
+      await saveAddressesList(currentUser.uid, updated);
       setSavedAddresses(updated);
       setSaveThisAddress(false);
     }

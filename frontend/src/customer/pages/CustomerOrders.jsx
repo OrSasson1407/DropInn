@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
-import { submitOrderReview, cancelOrder, updateProviderLocation } from '../../shared/services/firestore';
+import { submitOrderReview, cancelOrder } from '../../shared/services/firestore';
 import { getGoogleMapsNavigationUrl } from '../../shared/services/maps';
 import ServiceCoverageMap from '../../shared/components/ServiceCoverageMap';
 import { 
   Clock, MapPin, Scissors, CheckCircle2, Loader2, Star, 
   Sparkles, ShieldCheck, Navigation, ExternalLink, Calendar,
-  ChevronRight, AlertCircle, RefreshCw, XCircle, Map, Radio, Zap
+  ChevronRight, AlertCircle, RefreshCw, XCircle, Map, Radio
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -104,7 +104,7 @@ export default function CustomerOrders() {
 
   const handleReviewSubmit = async (orderId, providerId) => {
     const rating = ratingMap[orderId] || 5;
-    const comment = commentMap[orderId] || 'Incredible service, punctual and super clean!';
+    const comment = (commentMap[orderId] || '').trim();
     
     setSubmittingReviewId(orderId);
     try {
@@ -358,7 +358,7 @@ export default function CustomerOrders() {
                           </div>
                         ) : (
                           <p className="text-[11px] text-amber-400/80 italic pt-1">
-                            Pillar 1 Firestore listener active — awaiting GPS broadcast...
+                            Pillar 1 Firestore listener active ג€” awaiting GPS broadcast...
                           </p>
                         )}
                       </div>
