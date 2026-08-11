@@ -6,69 +6,6 @@ import {
   Sparkles, Zap, ChevronRight, UserCheck, HeartHandshake, Sparkle
 } from 'lucide-react';
 
-const DEFAULT_PORTFOLIO = [
-  {
-    id: '1',
-    title: 'Mid Skin Fade & Textured Crop',
-    category: 'Men\'s Haircut',
-    url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '2',
-    title: 'Gel Manicure & Nail Art Design',
-    category: 'Nails & Beauty',
-    url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '3',
-    title: 'Balayage & Women\'s Blowout Styling',
-    category: 'Women\'s Styling',
-    url: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '4',
-    title: 'Evening Event Professional Makeup',
-    category: 'Makeup',
-    url: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '5',
-    title: 'Deep Tissue Relaxing Massage',
-    category: 'Massage & Spa',
-    url: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '6',
-    title: 'Precision Beard Sculpting & Razor Line',
-    category: 'Beard Trim',
-    url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80'
-  }
-];
-
-const DEFAULT_REVIEWS = [
-  {
-    id: 'r1',
-    author: 'Daniel M.',
-    rating: 5,
-    date: '2 days ago',
-    comment: 'Incredible service! Arrived at my home in 18 minutes with full professional equipment. Extremely clean & polite.'
-  },
-  {
-    id: 'r2',
-    author: 'Elena R.',
-    rating: 5,
-    date: '1 week ago',
-    comment: 'Had a gel manicure and facial before a major wedding. Absolutely flawless result without leaving my house!'
-  },
-  {
-    id: 'r3',
-    author: 'Jonathan S.',
-    rating: 5,
-    date: '2 weeks ago',
-    comment: 'Punctual, super friendly provider. Great attention to detail and zero mess left behind.'
-  }
-];
-
 export default function BarberProfileModal({ provider, isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('portfolio'); // 'portfolio' | 'bio' | 'reviews'
   const [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -77,12 +14,18 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
 
   const name = provider.name || `Pro #${provider.id.substring(0, 6)}`;
   const price = provider.price || 120;
-  const rating = provider.rating || 4.9;
   const category = provider.category || 'Grooming & Beauty Pro';
-  const bio = provider.bio || `${name} is a certified grooming & beauty specialist with 8+ years of craft experience providing at-home haircutting, styling, manicures, skincare, and massages with portable mobile gear.`;
+  const bio = provider.bio || `${name} is a certified grooming & beauty specialist providing at-home haircutting, styling, manicures, skincare, and massages with portable mobile gear.`;
   const specialties = provider.specialties || ['Skin Fades', 'Gel Manicure', 'Beard Sculpting', 'Women\'s Blowout', 'Deep Tissue'];
-  const portfolio = provider.portfolio || DEFAULT_PORTFOLIO;
-  const reviews = provider.reviews || DEFAULT_REVIEWS;
+  // Never show stock photos as if they were this provider's real work -
+  // an empty portfolio must read as empty, not as a fabricated track record.
+  const portfolio = Array.isArray(provider.portfolio) ? provider.portfolio : [];
+
+  // Never fabricate ratings or reviews for a real provider - an empty
+  // track record must read as "new", not as a fake 4.9 with invented reviews.
+  const reviews = Array.isArray(provider.reviews) ? provider.reviews : [];
+  const hasRating = typeof provider.rating === 'number' && reviews.length > 0;
+  const rating = hasRating ? provider.rating : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fadeIn">
@@ -122,13 +65,21 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                   <span>Verified {category} • Mobile Delivery Pro</span>
                 </p>
                 <div className="flex items-center gap-2 pt-1 text-xs">
-                  <span className="flex items-center gap-1 bg-slate-950/60 px-2.5 py-0.5 rounded-full text-amber-300 font-bold border border-amber-300/20">
-                    <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                    <span>{rating}</span>
-                  </span>
-                  <span className="text-slate-200 text-[11px] font-medium">
-                    (52 verified bookings)
-                  </span>
+                  {hasRating ? (
+                    <>
+                      <span className="flex items-center gap-1 bg-slate-950/60 px-2.5 py-0.5 rounded-full text-amber-300 font-bold border border-amber-300/20">
+                        <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                        <span>{rating.toFixed(1)}</span>
+                      </span>
+                      <span className="text-slate-200 text-[11px] font-medium">
+                        ({reviews.length} review{reviews.length === 1 ? '' : 's'})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="bg-slate-950/60 px-2.5 py-0.5 rounded-full text-slate-200 font-bold border border-amber-300/20 text-[11px]">
+                      New - no reviews yet
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -195,6 +146,12 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                 </div>
               </div>
 
+              {portfolio.length === 0 ? (
+                <div className="p-6 text-center bg-slate-950 border border-dashed border-slate-800 rounded-2xl">
+                  <p className="text-sm text-slate-300 font-medium">No portfolio photos yet</p>
+                  <p className="text-xs text-slate-500 mt-1">{name} hasn't uploaded past work photos.</p>
+                </div>
+              ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                 {portfolio.map((item) => (
                   <div
@@ -220,6 +177,7 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           )}
 
@@ -274,12 +232,20 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white">Verified Customer Ratings</h3>
-                <div className="flex items-center gap-1 text-amber-400 font-extrabold text-sm">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span>{rating} out of 5.0</span>
-                </div>
+                {hasRating && (
+                  <div className="flex items-center gap-1 text-amber-400 font-extrabold text-sm">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <span>{rating.toFixed(1)} out of 5.0</span>
+                  </div>
+                )}
               </div>
 
+              {reviews.length === 0 ? (
+                <div className="p-6 text-center bg-slate-950 border border-dashed border-slate-800 rounded-2xl">
+                  <p className="text-sm text-slate-300 font-medium">No reviews yet</p>
+                  <p className="text-xs text-slate-500 mt-1">Be the first to book {name} and leave a review.</p>
+                </div>
+              ) : (
               <div className="space-y-3">
                 {reviews.map((rev) => (
                   <div key={rev.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
@@ -308,6 +274,7 @@ export default function BarberProfileModal({ provider, isOpen, onClose }) {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           )}
         </div>

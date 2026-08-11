@@ -9,31 +9,20 @@ import {
 import BarberProfileModal from '../components/BarberProfileModal';
 import { useToast } from '../../shared/context/ToastContext';
 
-const DEFAULT_PORTFOLIO = [
-  {
-    id: '1',
-    title: 'Mid Skin Fade & Textured Crop',
-    category: 'Skin Fade',
-    url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '2',
-    title: 'Precision Beard Sculpting & Razor Line',
-    category: 'Beard Trim',
-    url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '3',
-    title: 'Low Drop Fade with Hot Towel Finish',
-    category: 'Drop Fade',
-    url: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '4',
-    title: 'Classic Taper & Pompadour Styling',
-    category: 'Classic Cut',
-    url: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=800&q=80'
-  }
+const HAIRCUT_INCLUDED_ITEMS = [
+  'Precision Cut & Skin Fade',
+  'Beard Lineup & Shaping',
+  'Hot Towel Treatment',
+  'Styling with Premium Products',
+  'Sanitized Professional Gear',
+  'Cleanup & Zero Mess Guaranteed'
+];
+
+const GENERIC_INCLUDED_ITEMS = [
+  'Certified Mobile Specialist',
+  'Professional Sanitized Equipment',
+  'Full Service at Your Location',
+  'Cleanup & Zero Mess Guaranteed'
 ];
 
 export default function ProviderDetails() {
@@ -66,7 +55,16 @@ export default function ProviderDetails() {
   const price = provider?.price || 100;
   const bio = provider?.bio || `${name} is a mobile barber servicing clients across the metropolitan area with professional equipment.`;
   const specialties = provider?.specialties || ['Skin Fades', 'Beard Sculpting', 'Hot Towel Razor', 'Kid Cuts', 'Hair Tattoo Lines'];
-  const portfolio = provider?.portfolio || DEFAULT_PORTFOLIO;
+
+  // Never show stock photos as if they were this provider's real work -
+  // an empty portfolio must read as empty, not as a fabricated track record.
+  const portfolio = Array.isArray(provider?.portfolio) ? provider.portfolio : [];
+
+  const category = provider?.category || '';
+  const isHaircutCategory = /haircut|barber|fade/i.test(category);
+  const includedItems = Array.isArray(provider?.included) && provider.included.length > 0
+    ? provider.included
+    : (isHaircutCategory ? HAIRCUT_INCLUDED_ITEMS : GENERIC_INCLUDED_ITEMS);
 
   // Never fabricate ratings or testimonials for a real provider - an empty
   // track record must read as "new", not as a fake 4.9 with invented reviews.
@@ -149,9 +147,11 @@ export default function ProviderDetails() {
                 <UserCheck className="w-5 h-5 text-amber-400" />
                 <span>About {name}</span>
               </h3>
-              <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                8+ Years Exp
-              </span>
+              {typeof provider?.yearsExperience === 'number' && provider.yearsExperience > 0 && (
+                <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                  {provider.yearsExperience}+ Years Exp
+                </span>
+              )}
             </div>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
               {bio}
@@ -185,6 +185,12 @@ export default function ProviderDetails() {
               </button>
             </div>
 
+            {portfolio.length === 0 ? (
+              <div className="p-6 text-center bg-slate-950 border border-dashed border-slate-800 rounded-2xl">
+                <p className="text-sm text-slate-300 font-medium">No portfolio photos yet</p>
+                <p className="text-xs text-slate-500 mt-1">{name} hasn't uploaded past work photos.</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {portfolio.map((img) => (
                 <div
@@ -204,6 +210,7 @@ export default function ProviderDetails() {
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           {/* Main Service Package */}
@@ -212,9 +219,9 @@ export default function ProviderDetails() {
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <Scissors className="w-5 h-5 text-amber-400" />
-                  <span>Signature Haircut Package</span>
+                  <span>{category || 'Service'} Package</span>
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Complete grooming session delivered at your home/office</p>
+                <p className="text-xs text-slate-400 mt-0.5">Complete service session delivered at your home/office</p>
               </div>
               <div className="text-right">
                 <span className="text-2xl font-black text-amber-400">{price} ILS</span>
@@ -225,14 +232,7 @@ export default function ProviderDetails() {
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">What's Included:</h3>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
-                {[
-                  'Precision Cut & Skin Fade',
-                  'Beard Lineup & Shaping',
-                  'Hot Towel Treatment',
-                  'Styling with Premium Products',
-                  'Sanitized Professional Gear',
-                  'Cleanup & Zero Mess Guaranteed'
-                ].map((item) => (
+                {includedItems.map((item) => (
                   <li key={item} className="flex items-center gap-2.5 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                     <div className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />

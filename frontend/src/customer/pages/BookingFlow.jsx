@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createOrder } from '../../shared/services/firestore';
 import { useAuth } from '../../shared/context/AuthContext';
@@ -14,9 +14,32 @@ import PageHeaderBar from '../../shared/components/PageHeaderBar';
 import { useRealLocationData } from '../../shared/hooks/useRealLocationData';
 import { 
   MapPin, CreditCard, ShieldCheck, Clock, Star, CheckCircle, ArrowRight, 
-  Loader2, Navigation, Calendar, MessageSquare, Send, AlertCircle, Zap
+  Loader2, Navigation, Calendar, MessageSquare, Send, AlertCircle, Zap,
+  Home, Briefcase, Hotel
 } from 'lucide-react';
 import { ADDONS_BY_CATEGORY } from '../../shared/services/categories';
+
+const SAVED_ADDRESSES_KEY = 'dropin_saved_addresses';
+
+function getAddressTypeIcon(type) {
+  switch (type) {
+    case 'office': return Briefcase;
+    case 'hotel': return Hotel;
+    case 'home':
+    default: return Home;
+  }
+}
+
+function formatSavedAddress(addr) {
+  return addr.apt ? `${addr.address}, ${addr.apt}` : addr.address;
+}
+
+function buildNotesFromSavedAddress(addr) {
+  const parts = [];
+  if (addr.intercomCode) parts.push(`Intercom/Gate code: ${addr.intercomCode}`);
+  if (addr.parkingNotes) parts.push(`Parking/Access: ${addr.parkingNotes}`);
+  return parts.join(' | ');
+}
 
 export default function BookingFlow() {
   const { id: providerId } = useParams();
@@ -35,6 +58,9 @@ export default function BookingFlow() {
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState('14:00');
   const [address, setAddress] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [addressSource, setAddressSource] = useState(null); // 'saved' | 'gps' | 'manual'
+  const [saveThisAddress, setSaveThisAddress] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [notes, setNotes] = useState('');
 
@@ -53,12 +79,37 @@ export default function BookingFlow() {
   ]);
   const [inputChat, setInputChat] = useState('');
 
-  // Auto-fill address when GPS resolves
+  // Load saved addresses and auto-fill the default one, if any
   useEffect(() => {
+    const saved = localStorage.getItem(SAVED_ADDRESSES_KEY);
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      setSavedAddresses(parsed);
+      const defaultAddr = parsed.find((a) => a.isDefault) || parsed[0];
+      if (defaultAddr) {
+        setAddress(formatSavedAddress(defaultAddr));
+        setNotes(buildNotesFromSavedAddress(defaultAddr));
+        setAddressSource('saved');
+      }
+    } catch (e) { /* ignore */ }
+  }, []);
+
+  const handleSelectSavedAddress = (addr) => {
+    setAddress(formatSavedAddress(addr));
+    setNotes(buildNotesFromSavedAddress(addr));
+    setAddressSource('saved');
+    setSaveThisAddress(false);
+  };
+
+  // Auto-fill address when GPS resolves, but never overwrite a saved-address pick
+  useEffect(() => {
+    if (addressSource === 'saved') return;
     if (realLoc.address && realLoc.address !== 'Locating...' && realLoc.address !== 'GPS Permission Denied') {
       setAddress(realLoc.address);
+      setAddressSource('gps');
     }
-  }, [realLoc.address]);
+  }, [realLoc.address, addressSource]);
 
   // Fetch REAL Provider, NO Fallbacks
   useEffect(() => {
@@ -115,6 +166,23 @@ export default function BookingFlow() {
     e.preventDefault();
     if (!currentUser) return nav('/customer/login');
     if (!address.trim()) return toast.warning('Please enter a delivery address', 'Missing Address');
+
+    if (saveThisAddress && addressSource !== 'saved') {
+      const newAddr = {
+        id: `addr_${Date.now()}`,
+        title: 'Saved from Checkout',
+        type: 'home',
+        address,
+        apt: '',
+        intercomCode: '',
+        parkingNotes: '',
+        isDefault: savedAddresses.length === 0
+      };
+      const updated = [...savedAddresses, newAddr];
+      localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(updated));
+      setSavedAddresses(updated);
+      setSaveThisAddress(false);
+    }
 
     setIsSubmitting(true);
     try {
@@ -221,11 +289,58 @@ export default function BookingFlow() {
               {locLoading ? 'Acquiring GPS...' : 'Use My Exact GPS Location'}
             </button>
 
+            {savedAddresses.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase block">Saved Addresses</span>
+                <div className="flex flex-wrap gap-2">
+                  {savedAddresses.map((addr) => {
+                    const IconComponent = getAddressTypeIcon(addr.type);
+                    const isSelected = addressSource === 'saved' && address === formatSavedAddress(addr);
+                    return (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => handleSelectSavedAddress(addr)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 border-amber-400'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <IconComponent className="w-3.5 h-3.5" />
+                        <span>{addr.title}</span>
+                        {addr.isDefault && <span className="text-[9px] opacity-70">(Default)</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               <MapPin className="absolute left-4 top-3.5 w-5 h-5 text-amber-400" />
-              <input type="text" placeholder="Scanning for address..." value={address} onChange={(e) => setAddress(e.target.value)} required className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white" />
+              <input
+                type="text"
+                placeholder="Scanning for address..."
+                value={address}
+                onChange={(e) => { setAddress(e.target.value); setAddressSource('manual'); }}
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white"
+              />
             </div>
-            
+
+            {address.trim() && addressSource !== 'saved' && (
+              <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer pl-1">
+                <input
+                  type="checkbox"
+                  checked={saveThisAddress}
+                  onChange={(e) => setSaveThisAddress(e.target.checked)}
+                  className="rounded accent-amber-500"
+                />
+                <span>Save this address to my address book for next time</span>
+              </label>
+            )}
+
             {/* Passing real GPS down to the map */}
             <ServiceCoverageMap selectedAddress={address} defaultLat={realLoc.lat} defaultLng={realLoc.lng} />
           </div>

@@ -5,7 +5,7 @@ import { logout } from '../services/auth';
 import { useToast } from '../context/ToastContext';
 import { 
   User, LogOut, ShieldCheck, Briefcase, ShoppingBag, 
-  MapPin, Gift, Clock, ChevronDown, Check, Sparkles, SwitchCamera
+  MapPin, Gift, ChevronDown, Check, Sparkles, SwitchCamera
 } from 'lucide-react';
 
 export default function AccountDropdown({ activeRoleMode, setActiveRoleMode }) {
